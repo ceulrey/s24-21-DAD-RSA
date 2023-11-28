@@ -29,7 +29,7 @@ void loop()
   }
 
   else{
-    Serial.println("ERROR: This Shit Broke");
+    Serial.println("ERROR: No Connection");
     delay(1000);
   }
 }

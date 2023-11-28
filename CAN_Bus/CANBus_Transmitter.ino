@@ -4,7 +4,7 @@
 #include <DallasTemperature.h>
 
 // Pin used for one wire communication on the ExpressIf ESP32, note that pin 2 is reserved
-#define ONE_WIRE_BUS (17)
+#define ONE_WIRE_BUS (8)
 
 // Desired time interval between measurements (in milliseconds)
 #define DATA_INTERVAL (2000)
@@ -26,7 +26,7 @@ DeviceAddress deviceAddress;
  
 struct can_frame canMsg;
  
-MCP2515 mcp2515(5); 
+MCP2515 mcp2515(10); 
  
 void setup()
 {
