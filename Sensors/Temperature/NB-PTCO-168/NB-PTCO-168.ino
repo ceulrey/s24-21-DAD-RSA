@@ -37,8 +37,13 @@
 **/
 
 // Pin Definitions
-#define rtd_pin A0
-#define ref_pin A1
+#define rtd_pin A2
+#define ref_pin A3
+
+#define BAUD 115200       // any number, common choices: 9600, 115200, 230400, 921600
+#define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
+// A16 is the TX Pin, A0 is the RX Pin
+UART NanoSerial(A16, A0);
 
 // Variable Definitions
 const double a = 3.9083 * pow(10, -3);
@@ -49,7 +54,7 @@ const double c = -4.183 * pow(10, -12);
 const double Vs = 3.3;
 const double R0 = 1000.0;
 const double R1 = 470.0;
-const double R2 = 470.0;
+const double R2 = 910.0;
 const double R3 = 470.0;
 
 // Calculated Variables Declarations
@@ -64,7 +69,8 @@ void setup()
   pinMode(ref_pin, INPUT);
 
   // Begin transmission
-  Serial.begin(9600);
+  Serial.begin(BAUD);
+  NanoSerial.begin(BAUD);
 }
 
 void loop()
@@ -74,7 +80,7 @@ void loop()
   int raw_ref = analogRead(ref_pin);
 
   // Print raw values
-  // print_raw_values(raw_rtd, raw_ref);
+  print_raw_values(raw_rtd, raw_ref);
 
   // Convert raw values to voltage
   double rtd_voltage = convert_to_voltage(raw_rtd);
@@ -107,24 +113,24 @@ void print_raw_values(int raw_rtd, int raw_ref)
   Serial.print("Raw RTD Input: \t\t");
   Serial.print(raw_rtd);
   Serial.print("\tRaw RTD Voltage: \t");
-  Serial.println(raw_rtd / 1024.0 * 5.0, 10);
+  Serial.println(raw_rtd / 1024.0 * 2.0, 10);
 
   Serial.print("Raw Ref Input: \t\t");
   Serial.print(raw_ref);
   Serial.print("\tRaw Ref Voltage: \t");
-  Serial.println(raw_ref / 1024.0 * 5.0, 10);
+  Serial.println(raw_ref / 1024.0 * 2.0, 10);
 
   Serial.print("Input Difference: \t");
   Serial.print(raw_rtd - raw_ref);
   Serial.print("\tVoltage Difference: \t");
-  Serial.println((raw_rtd - raw_ref) / 1024.0 * 5.0, 10);
+  Serial.println((raw_rtd - raw_ref) / 1024.0 * 2.0, 10);
 
   Serial.println();
 }
 
 double convert_to_voltage(int raw)
 {
-  return (raw / 1024.0) * 5.0;
+  return (raw / 1024.0) * 2.0;
 }
 
 double find_resistance(double Vg)
@@ -143,6 +149,8 @@ void print_temperature(double T)
   Serial.println(T, 10);
   Serial.print("F: ");
   Serial.println(T * (9.0/5.0) + 32, 10);
+  NanoSerial.print(T, 10);
+  NanoSerial.print(" ");
 
   Serial.println();
 }
