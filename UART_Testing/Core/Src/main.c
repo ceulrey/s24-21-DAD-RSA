@@ -41,8 +41,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 uint8_t tx_buffer[27]="Hello Chris!\n\r";
@@ -57,7 +57,7 @@ uint8_t transfer_cplt;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_USART1_UART_Init(void);
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -96,7 +96,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-  MX_USART1_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, rx_data, 1);
 
@@ -109,8 +109,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//	  HAL_UART_Transmit(&huart2, tx_buffer, 27, 10);
-//	  HAL_Delay(1000);
+	  //HAL_UART_Transmit(&huart3, rx_data, strlen(rx_data), 100);
+	  //HAL_UART_Transmit(&huart3, tx_buffer, 27, 10);
+	  //HAL_Delay(1000);
 
 
   }
@@ -159,39 +160,6 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -225,6 +193,39 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -237,6 +238,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
@@ -271,24 +273,29 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 //  			  	  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 //  		  }
 
-  		  if(rx_data[0] != 13){
+  		  if(rx_data[0] != 32){
   			  rx_buffer[rx_indx++] = rx_data[0];
   		  }
   		  else{
   			  rx_indx = 0;
   			  transfer_cplt = 1;
   			  //HAL_UART_Transmit(&huart1, "\n\r", 2, 100);
-  			  if(!strcmp(rx_buffer, "\nHIGH")){
-  				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-  			  }
-  			  else if(!strcmp(rx_buffer, "\nLOW")){
-  				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-  			  }
+//  			  if(!strcmp(rx_buffer, "HIGH")){
+//  				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+//  				  //HAL_UART_Transmit(&huart3, rx_buffer, strlen(rx_buffer), 100);
+//  			  }
+//  			  else if(!strcmp(rx_buffer, "LOW")){
+//  				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+//  				  //HAL_UART_Transmit(&huart3, rx_buffer, strlen(rx_buffer), 100);
+//  			  }
+  			  HAL_UART_Transmit(&huart3, "C: ", 3, 100);
+  			  HAL_UART_Transmit(&huart3, rx_buffer, strlen(rx_buffer), 100);
+  			  HAL_UART_Transmit(&huart3, "\n\r", 2, 100);
   			  memset(rx_buffer, 0, sizeof(rx_buffer)); // Clear the buffer after processing
   		  }
 
   		  HAL_UART_Receive_IT(&huart2, rx_data, 1);
-  		  HAL_UART_Transmit(&huart1, rx_data, strlen(rx_data), 100);
+  		  //HAL_UART_Transmit(&huart3, rx_data, strlen(rx_data), 100);
   	  }
 }
 
