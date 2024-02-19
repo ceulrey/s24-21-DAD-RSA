@@ -5,10 +5,15 @@
  * 
  * Vg:  output voltage across bridge
  * Vs:  supply voltage
- * R1:  500ohms (470ohms for testing)
- * R2:  500ohms (470ohms for testing)
- * R3:  500ohms (470ohms for testing)
+ * R1:  1000 Ohms
+ * R2:   500 Ohms (470 Ohms for testing)
+ * R3:  1000 Ohms
  * Rx:  RTD Sensor
+ * 
+ * Resistor Positions
+ * ^^^^^^^^^^^^^^^^^^
+ *      R1 R3
+ *      R2 Rx
  * 
  * Rearranged to solve for Rx
  * ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -34,23 +39,43 @@
  *    T = [ -a*R0 + sqrt(R0)*sqrt((a^2)*R0 - 4*b*R0 + 4*b*RT) ] / [ 2*b*R0 ]
  * T < 0 degrees Celsius:
  *    Very long equation
+ * 
+ * NB-PTCO-168
+ * ^^^^^^^^^^^
+ * Range for our application:
+ *    Low                   Base                    High
+ *    -20 Celsius           0 Celsius               +60 Celsius
+ *    -4 Fahrenheit         +32 Fahrenheit          +140 Fahrenheit
+ *    922.0609843 Ohms      1000 Ohms               1232.419 Ohms
 **/
 
 // Pin Definitions
-#define rtd_pin A0
-#define ref_pin A1
+#define rtd_pin A2
+#define ref_pin A3
 
 // Variable Definitions
 const double a = 3.9083 * pow(10, -3);
 const double b = -5.775 * pow(10, -7);
 const double c = -4.183 * pow(10, -12);
+const double sample_size = 100;
+
+// ADC Definitions
+const int adc_resolution = 14;
+const double max_input = pow(2, adc_resolution);
+const double max_voltage = 2.0;
 
 // Voltage and Resistance Definitions
 const double Vs = 3.3;
 const double R0 = 1000.0;
-const double R1 = 470.0;
+const double R1 = 1000.0;
 const double R2 = 470.0;
-const double R3 = 470.0;
+const double R3 = 1000.0;
+
+// Voltage Calculation Variables Declarations
+int raw_rtd;
+int raw_ref;
+double rtd_voltage;
+double ref_voltage;
 
 // Calculated Variables Declarations
 double Vg;
@@ -59,6 +84,9 @@ double T;
 
 void setup()
 {
+  // Set the ADC resolution
+  analogReadResolution(adc_resolution);
+
   // Setup pins
   pinMode(rtd_pin, INPUT);
   pinMode(ref_pin, INPUT);
@@ -69,21 +97,18 @@ void setup()
 
 void loop()
 {
-  // Read raw values
-  int raw_rtd = analogRead(rtd_pin);
-  int raw_ref = analogRead(ref_pin);
+  // Find raw inputs for both Wheatstone Bridge Terminals
+  find_raw_inputs();
 
-  // Print raw values
-  // print_raw_values(raw_rtd, raw_ref);
-
-  // Convert raw values to voltage
-  double rtd_voltage = convert_to_voltage(raw_rtd);
-  double ref_voltage = convert_to_voltage(raw_ref);
+  // Convert raw values to voltages
+  rtd_voltage = convert_to_voltage(raw_rtd);
+  ref_voltage = convert_to_voltage(raw_ref);
 
   // Calculate voltage difference at the Wheatstone Bridge Terminals
   Vg = rtd_voltage - ref_voltage;
-  // Vg = convert_to_voltage(raw_rtd - raw_ref);
-  // Serial.println(Vg, 10);
+
+  // Print raw values for debugging
+  // print_raw_values();
 
   // Find the resistance across the RTD
   Rx = find_resistance(Vg);
@@ -97,34 +122,27 @@ void loop()
 	delay(500);
 }
 
-void print_raw_values(int raw_rtd, int raw_ref)
+void find_raw_inputs()
 {
-  Serial.print("Half Input: \t\t");
-  Serial.print(3.3 / 5.0 * 1024.0 / 2.0);
-  Serial.print("\tHalf Voltage: \t\t");
-  Serial.println(3.3 / 2.0, 10);
+  // Reset variables
+  raw_rtd = 0;
+  raw_ref = 0;
 
-  Serial.print("Raw RTD Input: \t\t");
-  Serial.print(raw_rtd);
-  Serial.print("\tRaw RTD Voltage: \t");
-  Serial.println(raw_rtd / 1024.0 * 5.0, 10);
+  // Loop to get raw inputs
+  for (int i = 0; i < sample_size; i++) {
+    raw_rtd += analogRead(rtd_pin);
+    raw_ref += analogRead(ref_pin);
+    // delay(1);
+  }
 
-  Serial.print("Raw Ref Input: \t\t");
-  Serial.print(raw_ref);
-  Serial.print("\tRaw Ref Voltage: \t");
-  Serial.println(raw_ref / 1024.0 * 5.0, 10);
-
-  Serial.print("Input Difference: \t");
-  Serial.print(raw_rtd - raw_ref);
-  Serial.print("\tVoltage Difference: \t");
-  Serial.println((raw_rtd - raw_ref) / 1024.0 * 5.0, 10);
-
-  Serial.println();
+  // Find average
+  raw_rtd /= sample_size;
+  raw_ref /= sample_size;
 }
 
 double convert_to_voltage(int raw)
 {
-  return (raw / 1024.0) * 5.0;
+  return (raw / max_input) * max_voltage;
 }
 
 double find_resistance(double Vg)
@@ -139,10 +157,39 @@ double find_temperature(double RT)
 
 void print_temperature(double T)
 {
+  double C = T;
+  double F = C * (9.0/5.0) + 32;
+
   Serial.print("C: ");
-  Serial.println(T, 10);
+  Serial.println(C, 10);
   Serial.print("F: ");
-  Serial.println(T * (9.0/5.0) + 32, 10);
+  Serial.println(F, 10);
+
+  Serial.println();
+}
+
+/* Debugging */
+void print_raw_values()
+{
+  Serial.print("Correct Raw Ref: \t\t");
+  Serial.print(max_input * ( R2 / (R1+R2) ));
+  Serial.print("\Correct Raw Ref Voltage: \t\t");
+  Serial.println(max_voltage / max_input * max_voltage, 10);
+
+  Serial.print("Raw RTD Input: \t\t");
+  Serial.print(raw_rtd);
+  Serial.print("\tRaw RTD Voltage: \t");
+  Serial.println(rtd_voltage, 10);
+
+  Serial.print("Raw Ref Input: \t\t");
+  Serial.print(raw_ref);
+  Serial.print("\tRaw Ref Voltage: \t");
+  Serial.println(ref_voltage, 10);
+
+  Serial.print("Input Difference: \t");
+  Serial.print(raw_rtd - raw_ref);
+  Serial.print("\tVoltage Difference: \t");
+  Serial.println(Vg, 10);
 
   Serial.println();
 }
