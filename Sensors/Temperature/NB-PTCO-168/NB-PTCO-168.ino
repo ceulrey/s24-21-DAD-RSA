@@ -52,14 +52,6 @@
 // Pin Definitions
 #define rtd_pin A2
 #define ref_pin A3
-<<<<<<< HEAD
-=======
-
-#define BAUD 115200       // any number, common choices: 9600, 115200, 230400, 921600
-#define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
-// A16 is the TX Pin, A0 is the RX Pin
-UART NanoSerial(A16, A0);
->>>>>>> ec5e970edb718047f1ef647312ac83fb956d2364
 
 // Variable Definitions
 const double a = 3.9083 * pow(10, -3);
@@ -75,7 +67,6 @@ const double max_voltage = 2.0;
 // Voltage and Resistance Definitions
 const double Vs = 3.3;
 const double R0 = 1000.0;
-<<<<<<< HEAD
 const double R1 = 1000.0;
 const double R2 = 470.0;
 const double R3 = 1000.0;
@@ -85,11 +76,6 @@ int raw_rtd;
 int raw_ref;
 double rtd_voltage;
 double ref_voltage;
-=======
-const double R1 = 470.0;
-const double R2 = 910.0;
-const double R3 = 470.0;
->>>>>>> ec5e970edb718047f1ef647312ac83fb956d2364
 
 // Calculated Variables Declarations
 double Vg;
@@ -106,8 +92,7 @@ void setup()
   pinMode(ref_pin, INPUT);
 
   // Begin transmission
-  Serial.begin(BAUD);
-  NanoSerial.begin(BAUD);
+  Serial.begin(9600);
 }
 
 void loop()
@@ -115,18 +100,9 @@ void loop()
   // Find raw inputs for both Wheatstone Bridge Terminals
   find_raw_inputs();
 
-<<<<<<< HEAD
   // Convert raw values to voltages
   rtd_voltage = convert_to_voltage(raw_rtd);
   ref_voltage = convert_to_voltage(raw_ref);
-=======
-  // Print raw values
-  print_raw_values(raw_rtd, raw_ref);
-
-  // Convert raw values to voltage
-  double rtd_voltage = convert_to_voltage(raw_rtd);
-  double ref_voltage = convert_to_voltage(raw_ref);
->>>>>>> ec5e970edb718047f1ef647312ac83fb956d2364
 
   // Calculate voltage difference at the Wheatstone Bridge Terminals
   Vg = rtd_voltage - ref_voltage;
@@ -152,7 +128,6 @@ void find_raw_inputs()
   raw_rtd = 0;
   raw_ref = 0;
 
-<<<<<<< HEAD
   // Loop to get raw inputs
   for (int i = 0; i < sample_size; i++) {
     raw_rtd += analogRead(rtd_pin);
@@ -163,33 +138,11 @@ void find_raw_inputs()
   // Find average
   raw_rtd /= sample_size;
   raw_ref /= sample_size;
-=======
-  Serial.print("Raw RTD Input: \t\t");
-  Serial.print(raw_rtd);
-  Serial.print("\tRaw RTD Voltage: \t");
-  Serial.println(raw_rtd / 1024.0 * 2.0, 10);
-
-  Serial.print("Raw Ref Input: \t\t");
-  Serial.print(raw_ref);
-  Serial.print("\tRaw Ref Voltage: \t");
-  Serial.println(raw_ref / 1024.0 * 2.0, 10);
-
-  Serial.print("Input Difference: \t");
-  Serial.print(raw_rtd - raw_ref);
-  Serial.print("\tVoltage Difference: \t");
-  Serial.println((raw_rtd - raw_ref) / 1024.0 * 2.0, 10);
-
-  Serial.println();
->>>>>>> ec5e970edb718047f1ef647312ac83fb956d2364
 }
 
 double convert_to_voltage(int raw)
 {
-<<<<<<< HEAD
   return (raw / max_input) * max_voltage;
-=======
-  return (raw / 1024.0) * 2.0;
->>>>>>> ec5e970edb718047f1ef647312ac83fb956d2364
 }
 
 double find_resistance(double Vg)
@@ -210,7 +163,6 @@ void print_temperature(double T)
   Serial.print("C: ");
   Serial.println(C, 10);
   Serial.print("F: ");
-<<<<<<< HEAD
   Serial.println(F, 10);
 
   Serial.println();
@@ -238,11 +190,6 @@ void print_raw_values()
   Serial.print(raw_rtd - raw_ref);
   Serial.print("\tVoltage Difference: \t");
   Serial.println(Vg, 10);
-=======
-  Serial.println(T * (9.0/5.0) + 32, 10);
-  NanoSerial.print(T, 10);
-  NanoSerial.print(" ");
->>>>>>> ec5e970edb718047f1ef647312ac83fb956d2364
 
   Serial.println();
 }
