@@ -173,7 +173,7 @@ void print_raw_values()
 {
   Serial.print("Correct Raw Ref: \t\t");
   Serial.print(max_input * ( R2 / (R1+R2) ));
-  Serial.print("\Correct Raw Ref Voltage: \t\t");
+  Serial.print("\tCorrect Raw Ref Voltage: \t\t");
   Serial.println(max_voltage / max_input * max_voltage, 10);
 
   Serial.print("Raw RTD Input: \t\t");
