@@ -2,7 +2,9 @@
 /**
   ******************************************************************************
   * @file           : main.c
-  * @brief          : Main program body
+  * @brief          : Main program for reception of UART packets
+  * @date			: 2/20/24
+  * @author			: S24-21
   ******************************************************************************
   * @attention
   *
@@ -19,7 +21,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "string.h"
-#include "stdbool.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -42,34 +43,43 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-
-
-/* Define the packet structure -----------------------------------------------*/
-typedef struct {
-    uint16_t sop;       // Start of packet
-    uint8_t datatype;   // Data type
-    uint8_t sensorId;   // Sensor ID
-    uint8_t length;     // Length of the data
-    uint32_t timestamp; // Timestamp
-    uint64_t data;      // Sensor data
-    uint8_t crc;        // Checksum
-    uint16_t eop;       // End of packet
-} SensorDataPacket;
-
-SensorDataPacket receivedPacket;
-bool isPacketReceived = false;
-uint8_t packetBuffer[sizeof(SensorDataPacket)];
-uint8_t rxIndex = 0;
-
+UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
-uint8_t tx_buffer[27]="Hello Chris!\n\r";
-uint8_t rx_indx;
-uint8_t rx_data[1];
-uint8_t rx_buffer[8];
-uint8_t transfer_cplt;
+
+/*
+ * PACKET STRUCTURE --> |SOP|DATATYPE|SENSOR ID|TIMESTAMP|DATA|CRC|EOP|
+ * 						|1B|1B|1B|4B|8B|1B|1B| = 17 Bytes
+ */
+typedef struct {
+  uint8_t sop;       // Start of packet
+  uint8_t datatype;   // Data type
+  uint8_t sensorId;   // Sensor ID
+  uint32_t timestamp; // Timestamp
+  uint64_t data;      // Sensor data
+  uint8_t crc;        // CRC for error checking
+  uint8_t eop;
+} SensorDataPacket;
+
+typedef enum { // FSM States
+    UART_WAIT_FOR_SOP,
+    UART_DATATYPE,
+    UART_SENSOR_ID,
+    UART_TIMESTAMP,
+    UART_DATA,
+    UART_CRC,
+	UART_EOP,
+    UART_DONE
+} UART_State_t;
+
+UART_State_t uartState = UART_WAIT_FOR_SOP; // Starting state
+SensorDataPacket sensorData; // Packet to be received and stored to memory
+uint8_t rx_data[1]; // Temp value for incoming byte
+uint8_t crc_calculated = 0; // Placeholder for the calculated CRC
+uint32_t dataIndex = 0; // Used for buffer indexing
+uint32_t timestampBuffer;
+uint64_t dataBuffer;
 
 /* USER CODE END PV */
 
@@ -77,55 +87,144 @@ uint8_t transfer_cplt;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_USART1_UART_Init(void);
-
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
-uint8_t CalculateCRC(uint8_t *data, size_t len);
-void ParsePacket(uint8_t *buffer, SensorDataPacket *packet);
-bool ValidatePacket(SensorDataPacket *packet);
+void resetState(void);
+int validateCRC(const SensorDataPacket *packet);
+void processData(const SensorDataPacket *packet);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    if(huart->Instance == USART2) {
-        packetBuffer[rxIndex++] = rx_data[0]; // Store received data in buffer
+    if(huart->Instance == USART2) { // If we are receiving on UART2
+        uint8_t rxByte = rx_data[0]; // Received byte
+        switch (uartState) {
+            case UART_WAIT_FOR_SOP: // SOP Case
+                if (rxByte == 0x53) { // SOP byte = 0x53 ('S')
+                	sensorData.sop = rxByte; // Set the sop
+                    uartState = UART_DATATYPE; // Next parameter
+                }
+                break;
+            case UART_DATATYPE: // Data type Case
+            	sensorData.datatype = rxByte; // Set the data type (Temp = 00, Humidity = 01, Sound = 10, Vibration = 11)
+                uartState = UART_SENSOR_ID; // Next parameter
+                break;
 
-        if(rxIndex >= sizeof(SensorDataPacket)) {
-            ParsePacket(packetBuffer, &receivedPacket);
+            case UART_SENSOR_ID: // Sensor ID Case
+            	sensorData.sensorId = rxByte; // Set the sensor ID (000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+                uartState = UART_TIMESTAMP; // Next parameter
+                break;
 
-            if(ValidatePacket(&receivedPacket)) {
-                isPacketReceived = true;
-            }
+            case UART_TIMESTAMP: // Timestamp Case
+                // Shift existing buffer by 8 to make room for new byte at LSB position
+                timestampBuffer >>= 8;
+                // Place the new byte at the LSB position
+                timestampBuffer |= (uint32_t)rxByte << (8 * (sizeof(sensorData.timestamp) - 1));
+                dataIndex++;
+                if (dataIndex >= sizeof(sensorData.timestamp)) { // Once the timestamp is full
+                    sensorData.timestamp = timestampBuffer; // Set timestamp to buffer
+                    dataIndex = 0;
+                    uartState = UART_DATA; // Next parameter
+                }
+                break;
 
-            rxIndex = 0; // Reset index for next packet
+            case UART_DATA: // Data Case
+                // Same logic as timestamp for little-endian
+                dataBuffer >>= 8;
+                dataBuffer |= (uint64_t)rxByte << (8 * (sizeof(sensorData.data) - 1));
+                dataIndex++;
+                if (dataIndex >= sizeof(sensorData.data)) {
+                    sensorData.data = dataBuffer;
+                    dataIndex = 0;
+                    uartState = UART_CRC; // Next parameter
+                }
+                break;
+
+            case UART_CRC: // CRC Case
+                sensorData.crc = rxByte; // Set the CRC value based on algorithm
+                uartState = UART_EOP; // Next parameter
+                break;
+
+            case UART_EOP:
+                if (rxByte == 0x45) { // EOP byte = 0x45 ('E')
+                    uartState = UART_DONE; // Packet reception is complete
+                    sensorData.eop = rxByte; // Set the eop
+                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+                } else {
+                    uartState = UART_WAIT_FOR_SOP; // Invalid EOP, reset FSM
+                }
+                break;
+
+            case UART_DONE:
+                // Packet is complete, validate CRC and take appropriate action
+//                if (validateCRC(&sensorData)) {
+//                    processData(&sensorData); // Process the data
+//                }
+            	processData(&sensorData); // Process the data
+                resetState(); // Reset FSM and variables
+                break;
         }
-
-        HAL_UART_Receive_IT(&huart2, rx_data, 1); // Prepare to receive next character
+        // Ready to receive the next byte
+        HAL_UART_Receive_IT(&huart2, rx_data, 1);
     }
 }
-
-void ParsePacket(uint8_t *buffer, SensorDataPacket *packet) {
-    // Assuming the buffer is in the correct order and size as the SensorDataPacket structure
-    memcpy(packet, buffer, sizeof(SensorDataPacket));
+void resetState(void) {
+    uartState = UART_WAIT_FOR_SOP; // Starting state
+    dataIndex = 0;
+    timestampBuffer = 0;
+    dataBuffer = 0;
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 }
 
-uint8_t CalculateCRC(uint8_t *data, size_t len) {
-    uint8_t crc = 0;
-    for(size_t i = 0; i < len; ++i) {
-        crc ^= data[i];
-    }
-    return crc;
+int validateCRC(const SensorDataPacket *packet) {
+    // Placeholder function to validate CRC - replace with actual CRC calculation
+    return packet->crc == crc_calculated;
 }
 
-bool ValidatePacket(SensorDataPacket *packet) {
-    // Calculate the CRC on the received data
-    uint8_t crc = CalculateCRC((uint8_t*)packet, sizeof(SensorDataPacket) - sizeof(packet->crc));
+void processData(const SensorDataPacket *packet) {
+    char buffer[100]; // Ensure the buffer is large enough for all the data
 
-    // Check if the calculated CRC matches the received CRC
-    return crc == packet->crc;
+    // Start of Packet (SOP) - Hexadecimal
+    sprintf(buffer, "SOP: 0x%02X\r\n", packet->sop);
+    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+
+    // Data Type - Binary
+    sprintf(buffer, "Data Type: %u\r\n", packet->datatype);
+    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+
+    // Sensor ID - Binary
+    sprintf(buffer, "Sensor ID: %u\r\n", packet->sensorId);
+    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+
+    // Timestamp - Decimal
+    sprintf(buffer, "Timestamp: %lu\r\n", packet->timestamp);
+    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+
+    // Data - Decimal
+    sprintf(buffer, "Data: %lu\r\n", packet->data);
+    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+
+    // CRC - Hexadecimal
+    sprintf(buffer, "CRC: 0x%02X\r\n", packet->crc);
+    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+
+    // End of Packet (EOP) - Hexadecimal
+    sprintf(buffer, "EOP: 0x%02X\r\n", packet->eop);
+    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+
+    // Separator
+    HAL_UART_Transmit(&huart3, (uint8_t*)"--------\r\n", 10, 100);
 }
+
+//uint8_t CalculateCRC(uint8_t *data, size_t len) {
+//    uint8_t crc = 0;
+//    for(size_t i = 0; i < len; ++i) {
+//        crc ^= data[i];
+//    }
+//    return crc;
+//}
 
 /* USER CODE END 0 */
 
@@ -158,7 +257,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-  MX_USART1_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, rx_data, 1);
 
@@ -168,23 +267,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(isPacketReceived) {
-	      // Handle the received packet
-		  HAL_UART_Transmit(&huart1, rx_data, strlen(rx_data), 100);
-
-		  // Reset the packet received flag
-		  isPacketReceived = false;
-	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//	  HAL_UART_Transmit(&huart2, tx_buffer, 27, 10);
-//	  HAL_Delay(1000);
-
-
   }
   /* USER CODE END 3 */
 }
+
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -227,39 +316,6 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -293,6 +349,39 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -305,6 +394,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
