@@ -4,11 +4,12 @@
  * Outputs from ADXL335 are on a scale from 0 V - 3.3 V
  *    Artemis ADC input only reads from 0 V - 2 V
  * 
- * To fix this, use the outputs in each direction as the voltage source
- * for two series resistors with the same value. Read the voltage between
- * these resistors. This will cut all ADXL335 outputs in half, effectively
- * making the ADXL335 outputs on a scale from 0 V - 1.65 V which falls
- * within the Artemis ADC range.
+ * To fix this, put a 32k Ohm resistor on each output to ground and read
+ * data from the output of the ADXL335. The ADXL335 has built in 32k Ohm
+ * resistors on each output. So, putting an extra 32k Ohm resistor on the
+ * output and measuring input between them effectively creates a voltage
+ * divider that cuts the voltage in half to make the ADXL335 output range
+ * of 0 V - 1.65 V.
  * 
  * ADXL335
  * ^^^^^^^
@@ -31,13 +32,13 @@
 #define z_pin A5
 
 // Variable Definitions
-const double x_VperG = 0.330;
-const double x_zeroG = 1.658;
-const double y_VperG = 0.338;
-const double y_zeroG = 1.630;
-const double z_VperG = 0.330;
-const double z_zeroG = 1.668;
-const double sample_size = 100;
+const double x_VperG = 0.330 / 2.0;
+const double x_zeroG = 1.658 / 2.0;
+const double y_VperG = 0.338 / 2.0;
+const double y_zeroG = 1.630 / 2.0;
+const double z_VperG = 0.330 / 2.0;
+const double z_zeroG = 1.668 / 2.0;
+const double sample_size = 1;
 
 // ADC Definitions
 const int adc_resolution = 14;
@@ -88,9 +89,12 @@ void loop()
   // print_raw_values();
 
   // Print G Forces
-  print_G_Forces();
+  // print_G_Forces();
 
-	delay(1000);
+  // Print for Serial Plotter
+  print_for_plotter();
+
+	delay(1);
 }
 
 void find_raw_inputs()
@@ -167,4 +171,14 @@ void print_raw_values()
   Serial.println(z, 10);
 
   Serial.println();
+}
+
+/* Debugging */
+void print_for_plotter()
+{
+  Serial.print(x);
+  Serial.print(" ");
+  Serial.print(y);
+  Serial.print(" ");
+  Serial.println(z);
 }
