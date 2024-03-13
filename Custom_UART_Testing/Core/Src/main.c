@@ -105,6 +105,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 if (rxByte == 0x53) { // SOP byte = 0x53 ('S')
                 	sensorData.sop = rxByte; // Set the sop
                     uartState = UART_DATATYPE; // Next parameter
+//                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
                 }
                 break;
             case UART_DATATYPE: // Data type Case
@@ -115,6 +116,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
             case UART_SENSOR_ID: // Sensor ID Case
             	sensorData.sensorId = rxByte; // Set the sensor ID (000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
                 uartState = UART_TIMESTAMP; // Next parameter
+//                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
                 break;
 
             case UART_TIMESTAMP: // Timestamp Case
@@ -145,15 +147,19 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
             case UART_CRC: // CRC Case
                 sensorData.crc = rxByte; // Set the CRC value based on algorithm
                 uartState = UART_EOP; // Next parameter
+//                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
                 break;
 
             case UART_EOP:
                 if (rxByte == 0x45) { // EOP byte = 0x45 ('E')
                     uartState = UART_DONE; // Packet reception is complete
                     sensorData.eop = rxByte; // Set the eop
-                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+                    // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
                 } else {
-                    uartState = UART_WAIT_FOR_SOP; // Invalid EOP, reset FSM
+                    uartState = UART_DONE; // Packet reception is complete
+                    sensorData.eop = rxByte; // Set the eop
+                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+//                    uartState = UART_WAIT_FOR_SOP; // Invalid EOP, reset FSM
                 }
                 break;
 

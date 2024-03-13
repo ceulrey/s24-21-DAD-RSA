@@ -60,8 +60,8 @@ all: main-build
 main-build: Custom_UART_Testing.elf secondary-outputs
 
 # Tool invocations
-Custom_UART_Testing.elf Custom_UART_Testing.map: $(OBJS) $(USER_OBJS) C:\Users\boern\Documents\College\Senior\ Design\Code\GitHub\STM_Workspace\Custom_UART_Testing\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Custom_UART_Testing.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\boern\Documents\College\Senior Design\Code\GitHub\STM_Workspace\Custom_UART_Testing\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Custom_UART_Testing.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Custom_UART_Testing.elf Custom_UART_Testing.map: $(OBJS) $(USER_OBJS) C:\Users\boern\Documents\College\Senior\ Design\Code\GitHub\s24-21-DAD-RSA\Custom_UART_Testing\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Custom_UART_Testing.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\boern\Documents\College\Senior Design\Code\GitHub\s24-21-DAD-RSA\Custom_UART_Testing\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Custom_UART_Testing.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
