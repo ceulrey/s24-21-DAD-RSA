@@ -17,6 +17,7 @@ const pin_size_t RX_PIN = 10;
 // const PinName RX_PIN = D43;
 // UART NanoSerial(TX_PIN, RX_PIN);
 // UART Serial1(9, 10);
+UART NanoSerial(A16, A0);
 
 // Custom UART Packet Design
 struct SensorDataPacket {
@@ -33,7 +34,7 @@ struct SensorDataPacket {
 void setup() {
   // NanoSerial.begin(BAUD, CONFIG);
   Serial.begin(BAUD, CONFIG);
-  Serial1.begin(BAUD, CONFIG);
+  NanoSerial.begin(BAUD, CONFIG);
 
   // Initialize random number generator with a unique seed
   randomSeed(analogRead(0));
@@ -44,8 +45,8 @@ void loop() {
   // Construct packet 
   SensorDataPacket packet;
   packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
-  packet.datatype = 0b00;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
-  packet.sensorId = 0b000;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+  packet.datatype = 0b10;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+  packet.sensorId = 0b011;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
   packet.timestamp = now();                                                          // Time when Data Captured
   packet.data = (uint64_t)random(30, 91);                                            // Data Field
   packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
@@ -56,7 +57,7 @@ void loop() {
 
   // Send packet over UART (serial)
   sendSensorDataPacket(packet);
-  delay(1000); // delay 1 second
+  delay(3000); // delay 1 second
 }
 
 // Placeholder function to return a timestamp (number of seconds since the Arduino started)
@@ -77,7 +78,7 @@ uint8_t calculateCRC(uint8_t *data, size_t len) {
 void sendSensorDataPacket(SensorDataPacket& packet) {
   Serial.write((uint8_t*)&packet, sizeof(packet));
   // NanoSerial.write((uint8_t*)&packet, sizeof(packet));
-  Serial1.write((uint8_t*)&packet, sizeof(packet));
+  NanoSerial.write((uint8_t*)&packet, sizeof(packet));
 }
 
 // void sendSensorDataPacket(SensorDataPacket& packet) {
@@ -91,8 +92,8 @@ void sendSensorDataPacket(SensorDataPacket& packet) {
 // Print out the UART packet over serial for debugging purposes
 void printSensorDataPacket(const SensorDataPacket& packet) {
   Serial.print("\nSOP: 0x"); Serial.println(packet.sop, HEX);
-  Serial.print("Data Type: "); Serial.println(packet.datatype, BIN);
-  Serial.print("Sensor ID: "); Serial.println(packet.sensorId, BIN);
+  Serial.print("Data Type: "); Serial.println(packet.datatype);
+  Serial.print("Sensor ID: "); Serial.println(packet.sensorId);
   Serial.print("Timestamp: "); Serial.println(packet.timestamp);
   Serial.print("Data: "); Serial.println((long)packet.data);
   Serial.print("CRC: 0x"); Serial.println(packet.crc, HEX);
