@@ -1,5 +1,5 @@
 #define sensor_pin A2
-#define RH_constant 2000 // Relative Humidity Constant * 10
+#define RH_constant 2745 // Relative Humidity Constant * 10
 
 double H;
 

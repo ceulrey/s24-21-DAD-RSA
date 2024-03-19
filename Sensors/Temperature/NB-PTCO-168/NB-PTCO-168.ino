@@ -119,7 +119,7 @@ void loop()
   // Print the temperature in Celsius and Fahrenheit
   print_temperature(T);
 
-	delay(500);
+	delay(200);
 }
 
 void find_raw_inputs()
