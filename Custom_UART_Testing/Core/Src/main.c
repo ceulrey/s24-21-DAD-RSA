@@ -20,7 +20,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -98,7 +97,6 @@ void processData(const SensorDataPacket *packet);
 /* USER CODE BEGIN 0 */
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	char buffer[100]; // Ensure the buffer is large enough for all the data
     if(huart->Instance == USART2) { // If we are receiving on UART2
         uint8_t rxByte = rx_data[0]; // Received byte
 //    	sprintf(buffer, "RxByte: 0x%08lX\r\n", rxByte);
