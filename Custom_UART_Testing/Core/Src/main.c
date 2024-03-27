@@ -20,12 +20,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
-#define TEMPERATURE 0b00
-#define HUMIDITY 0b01
-#define SOUND 0b10
-#define VIBRATION 0b11
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -59,6 +53,11 @@ UART_HandleTypeDef huart5;
  * PACKET STRUCTURE --> |SOP|DATATYPE|SENSOR ID|TIMESTAMP|DATA|CRC|EOP|
  * 						|1B|1B|1B|4B|8B|1B|1B| = 17 Bytes
  */
+#define TEMPERATURE 0b00
+#define HUMIDITY 0b01
+#define SOUND 0b10
+#define VIBRATION 0b11
+
 typedef struct {
   uint8_t sop;        // Start of packet
   uint8_t datatype;   // Data type
@@ -240,7 +239,9 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
     *uartState = UART_WAIT_FOR_SOP; // Reset UART state
     *timestampBuffer = 0; // Clear the timestamp buffer
     *dataBuffer = 0; // Clear the data buffer
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
@@ -598,10 +599,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13|GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PD13 PD15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_15;
+  GPIO_InitStruct.Pin =  GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
