@@ -43,7 +43,7 @@ struct SensorDataPacket {
   uint8_t datatype;   // 1 byte
   uint8_t sensorId;   // 1 byte
   uint32_t timestamp; // 4 bytes
-  uint64_t data;      // 8 bytes
+  int64_t data;      // 8 bytes
   uint8_t crc;        // 1 byte
   uint8_t eop;        // 1 byte
                       // Total Size: 17 bytes
@@ -104,13 +104,21 @@ void loop()
   // Find the G Forces in each direction
   find_G_Forces();
 
+  // Scale factor for two decimal places
+  const int scaleFactor = 100;
+
+  // Convert to fixed-point representation
+  int16_t x_fixed = (int16_t)(x * scaleFactor);
+  int16_t y_fixed = (int16_t)(y * scaleFactor);
+  int16_t z_fixed = (int16_t)(z * scaleFactor);
+
   // Construct packet 
   SensorDataPacket packet;
   packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
-  packet.datatype = 0b10;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+  packet.datatype = 0b11;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
   packet.sensorId = 0b011;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
   packet.timestamp = now();                                                          // Time when Data Captured
-  packet.data = (uint64_t) z;                                                        // Data Field
+  packet.data = packData(x_fixed, y_fixed, z_fixed);                                 // Data Field
   packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
   packet.eop = 0x45; 
 
@@ -127,7 +135,7 @@ void loop()
 
   sendSensorDataPacket(packet);
 
-	delay(250);
+	delay(1000);
 }
 
 void find_raw_inputs()
@@ -157,9 +165,12 @@ double convert_to_voltage(int raw)
 
 void find_G_Forces()
 {
-  x = (x_voltage - x_zeroG) / x_VperG;
-  y = (y_voltage - y_zeroG) / y_VperG;
-  z = (z_voltage - z_zeroG) / z_VperG;
+  // x = (x_voltage - x_zeroG) / x_VperG;
+  // y = (y_voltage - y_zeroG) / y_VperG;
+  // z = (z_voltage - z_zeroG) / z_VperG;
+  x = 0.57;
+  y = 1.90;
+  z = 6.20;
 }
 
 void print_G_Forces()
@@ -243,7 +254,15 @@ void printSensorDataPacket(const SensorDataPacket& packet) {
   Serial.print("Data Type: "); Serial.println(packet.datatype);
   Serial.print("Sensor ID: "); Serial.println(packet.sensorId);
   Serial.print("Timestamp: "); Serial.println(packet.timestamp);
-  Serial.print("Data: "); Serial.println((long)packet.data);
+  Serial.print("Acceleration: "); Serial.println(packet.data);
   Serial.print("CRC: 0x"); Serial.println(packet.crc, HEX);
   Serial.print("EOP: 0x"); Serial.println(packet.eop, HEX);
 }  
+
+int64_t packData(int16_t x, int16_t y, int16_t z) {
+    int64_t packedData = 0;
+    packedData |= ((int64_t)x << 32) & 0xFFFF00000000;
+    packedData |= ((int64_t)y << 16) & 0x0000FFFF0000;
+    packedData |= z & 0x00000000FFFF;
+    return packedData;
+}

@@ -10,13 +10,6 @@
 #define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
 #include "Arduino.h"
 // A16 is the TX Pin, A0 is the RX Pin
-// 7 is the TX Pin, 6 is the RX Pin
-const pin_size_t TX_PIN = 9;
-const pin_size_t RX_PIN = 10;
-// const PinName TX_PIN = D42;
-// const PinName RX_PIN = D43;
-// UART NanoSerial(TX_PIN, RX_PIN);
-// UART Serial1(9, 10);
 UART NanoSerial(A16, A0);
 
 // Custom UART Packet Design
@@ -25,7 +18,7 @@ struct SensorDataPacket {
   uint8_t datatype;   // 1 byte
   uint8_t sensorId;   // 1 byte
   uint32_t timestamp; // 4 bytes
-  uint64_t data;      // 8 bytes
+  double data;        // 8 bytes
   uint8_t crc;        // 1 byte
   uint8_t eop;        // 1 byte
                       // Total Size: 17 bytes
@@ -45,10 +38,10 @@ void loop() {
   // Construct packet 
   SensorDataPacket packet;
   packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
-  packet.datatype = 0b10;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
-  packet.sensorId = 0b011;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+  packet.datatype = 0b11;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+  packet.sensorId = 0b111;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
   packet.timestamp = now();                                                          // Time when Data Captured
-  packet.data = (uint64_t)random(30, 91);                                            // Data Field
+  packet.data = random(10, 5000) / 100.0;                                              // Data Field
   packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
   packet.eop = 0x45;                                                                 // Stop Byte ('E' in ASCII)
 
@@ -95,7 +88,7 @@ void printSensorDataPacket(const SensorDataPacket& packet) {
   Serial.print("Data Type: "); Serial.println(packet.datatype);
   Serial.print("Sensor ID: "); Serial.println(packet.sensorId);
   Serial.print("Timestamp: "); Serial.println(packet.timestamp);
-  Serial.print("Data: "); Serial.println((long)packet.data);
+  Serial.print("Data: "); Serial.println(packet.data);
   Serial.print("CRC: 0x"); Serial.println(packet.crc, HEX);
   Serial.print("EOP: 0x"); Serial.println(packet.eop, HEX);
 }  

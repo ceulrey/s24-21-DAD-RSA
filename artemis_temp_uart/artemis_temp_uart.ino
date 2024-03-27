@@ -65,7 +65,8 @@ struct SensorDataPacket {
   uint8_t datatype;   // 1 byte
   uint8_t sensorId;   // 1 byte
   uint32_t timestamp; // 4 bytes
-  uint64_t data;      // 8 bytes
+  // uint64_t data;        // 8 bytes
+  int64_t data;
   uint8_t crc;        // 1 byte
   uint8_t eop;        // 1 byte
                       // Total Size: 17 bytes
@@ -135,13 +136,17 @@ void loop()
   // Find the temperature in degrees Celsius
   T = find_temperature(Rx);
 
+  // Convert temperature to fixed-point representation
+  int64_t fixedPointData = static_cast<int64_t>(30.76 * 100);  // Assuming T is your temperature in Celsius
+
   // Construct packet 
   SensorDataPacket packet;
   packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
   packet.datatype = 0b00;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
-  packet.sensorId = 0b010;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+  packet.sensorId = 0b001;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
   packet.timestamp = now();                                                          // Time when Data Captured
-  packet.data = (uint64_t) T;                                                        // Data Field
+  // packet.data = T;                                                                   // Data Field
+  packet.data = fixedPointData;  
   packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
   packet.eop = 0x45;     
   
@@ -154,7 +159,7 @@ void loop()
   sendSensorDataPacket(packet);
 
 	// delay(200);
-  delay(250); // delay 1 second
+  delay(1000); // delay 1 second
 }
 
 // Placeholder function to return a timestamp (number of seconds since the Arduino started)
@@ -184,7 +189,7 @@ void printSensorDataPacket(const SensorDataPacket& packet) {
   Serial.print("Data Type: "); Serial.println(packet.datatype);
   Serial.print("Sensor ID: "); Serial.println(packet.sensorId);
   Serial.print("Timestamp: "); Serial.println(packet.timestamp);
-  Serial.print("Data: "); Serial.println((long)packet.data);
+  Serial.print("Temperature: "); Serial.println(packet.data);
   Serial.print("CRC: 0x"); Serial.println(packet.crc, HEX);
   Serial.print("EOP: 0x"); Serial.println(packet.eop, HEX);
 }  
