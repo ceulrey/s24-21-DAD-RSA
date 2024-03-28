@@ -29,12 +29,12 @@ void setup()
 
 void loop()
 {
-  // double T_decay = RCTime();
+  double T_decay = RCTime();
 
-  // double humidity = (T_decay - RH_constant) / 24;
+  double humidity = (T_decay - RH_constant) / 24;
 
   // Convert humidity to fixed-point representation
-  int64_t fixedPointData = static_cast<int64_t>(25.19 * 100);  // Assuming T is your temperature in Celsius
+  int64_t fixedPointData = static_cast<int64_t>(humidity * 100);  // Assuming T is your temperature in Celsius
 
   // Construct packet 
   SensorDataPacket packet;
@@ -47,14 +47,14 @@ void loop()
   packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
   packet.eop = 0x45;   
   
-  // Serial.println(humidity, 10);
+  Serial.println(humidity, 10);
 
   // Print packet before sending
   printSensorDataPacket(packet);
 
   sendSensorDataPacket(packet);
 
-  delay(1000);
+  delay(500);
 }
 
 double RCTime()

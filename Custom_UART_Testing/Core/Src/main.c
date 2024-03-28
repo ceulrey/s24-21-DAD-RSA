@@ -96,6 +96,14 @@ uint32_t timestampBuffer2;
 uint64_t dataBuffer2;
 uint32_t dataIndex2 = 0; // Used for buffer indexing
 
+// Declaration for USART4
+uint8_t rx_data3[1];
+SensorDataPacket sensorData3;
+UART_State_t uartState3 = UART_WAIT_FOR_SOP;
+uint32_t timestampBuffer3;
+uint64_t dataBuffer3;
+uint32_t dataIndex3 = 0; // Used for buffer indexing
+
 uint8_t crc_calculated = 0; // Placeholder for the calculated CRC
 //uint32_t dataIndex = 0; // Used for buffer indexing
 
@@ -116,7 +124,7 @@ void printData(const SensorDataPacket *packet);
 void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, uint8_t *rxData,
                      UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex);
 void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer);
-void unpackData(int64_t packedData, int16_t* x, int16_t* y, int16_t* z);
+void unpackData(uint64_t packedData, int16_t* x, int16_t* y, int16_t* z);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -127,15 +135,24 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
         // Process data from USART1
     	processUartData(huart, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
     }
-    if(huart->Instance == USART2) {
+    else if(huart->Instance == USART2) {
         // Process data from USART2
     	processUartData(huart, &sensorData2, rx_data2, &uartState2, &timestampBuffer2, &dataBuffer2, &dataIndex2);
     }
+    else if(huart->Instance == UART4) {
+        // Process data from USART2
+    	processUartData(huart, &sensorData3, rx_data3, &uartState3, &timestampBuffer3, &dataBuffer3, &dataIndex3);
+    }
+
     // Re-enable UART reception interrupt correctly for each port
     if (huart->Instance == USART1) {
         HAL_UART_Receive_IT(&huart1, rx_data1, 1);
-    } else if (huart->Instance == USART2) {
+    }
+    else if (huart->Instance == USART2) {
         HAL_UART_Receive_IT(&huart2, rx_data2, 1);
+    }
+    else if (huart->Instance == UART4) {
+    	HAL_UART_Receive_IT(&huart4, rx_data3, 1);
     }
 }
 
@@ -184,7 +201,7 @@ void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, ui
 
         case UART_DATA: // Data Case
             // Combine byte into data assuming little endian - least significant byte first
-        	*dataBuffer |= ((uint32_t)rxByte << ((*dataIndex-1) * 8));//            	sprintf(buffer, "Data partial: 0x%016llx\r\n", dataBuffer);
+        	*dataBuffer |= ((uint64_t)rxByte << ((*dataIndex-1) * 8));//            	sprintf(buffer, "Data partial: 0x%016llx\r\n", dataBuffer);
 //            	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100); // Print debug info
             (*dataIndex)++;
             if (*dataIndex >= sizeof(sensorData->data)) {
@@ -208,10 +225,13 @@ void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, ui
                 *uartState = UART_DONE; // Packet reception is complete
                 sensorData->eop = rxByte; // Set the eop
                 if(huart->Instance == USART1){
-                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET); // Red LED set when packet is complete
                 }
                 else if(huart->Instance == USART2){
-                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET); // Orange LED set when packet is complete
+                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+                }
+                else if(huart->Instance == UART4){
+                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET); // Blue LED set when packet is complete
                 }
 //                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
             } else {
@@ -252,9 +272,12 @@ int validateCRC(const SensorDataPacket *packet) {
 
 void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
-
+    char buffer2[100]; // Ensure the buffer is large enough for all the data
+    double data;
     // Assuming the data field is treated as fixed-point and needs to be converted back to float
-    double data = packet->data / 100.0;  // Convert fixed-point back to double
+    if(packet->datatype != VIBRATION){
+        data = packet->data / 100.0;  // Convert fixed-point back to double
+    }
 
     // Start of Packet (SOP) - Hexadecimal
     sprintf(buffer, "SOP: 0x%02X\r\n", packet->sop);
@@ -293,8 +316,10 @@ void printData(const SensorDataPacket *packet) {
         float x_float = x / 100.0f;
         float y_float = y / 100.0f;
         float z_float = z / 100.0f;
+//        sprintf(buffer2, "Data: %lu\r\n", packet->data);
         sprintf(buffer, "X: %.2f G\tY: %.2f G\tZ: %.2f G\r\n", x_float, y_float, z_float);
     }
+//    HAL_UART_Transmit(&huart3, (uint8_t*)buffer2, strlen(buffer), 100);
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 
     // CRC - Hexadecimal
@@ -309,7 +334,7 @@ void printData(const SensorDataPacket *packet) {
     HAL_UART_Transmit(&huart3, (uint8_t*)"--------\r\n", 10, 100);
 }
 
-void unpackData(int64_t packedData, int16_t* x, int16_t* y, int16_t* z) {
+void unpackData(uint64_t packedData, int16_t* x, int16_t* y, int16_t* z) {
     *x = (int16_t)((packedData >> 32) & 0xFFFF);
     *y = (int16_t)((packedData >> 16) & 0xFFFF);
     *z = (int16_t)(packedData & 0xFFFF);
@@ -361,7 +386,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart1, rx_data1, 1);
   HAL_UART_Receive_IT(&huart2, rx_data2, 1);
-
+  HAL_UART_Receive_IT(&huart4, rx_data3, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */

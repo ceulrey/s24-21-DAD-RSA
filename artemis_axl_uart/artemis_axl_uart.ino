@@ -123,7 +123,7 @@ void loop()
   packet.eop = 0x45; 
 
   // Print raw values for debugging
-  // print_raw_values();
+  print_raw_values();
 
   // Print G Forces
   // print_G_Forces();
@@ -135,7 +135,7 @@ void loop()
 
   sendSensorDataPacket(packet);
 
-	delay(1000);
+	delay(500);
 }
 
 void find_raw_inputs()
@@ -165,12 +165,12 @@ double convert_to_voltage(int raw)
 
 void find_G_Forces()
 {
-  // x = (x_voltage - x_zeroG) / x_VperG;
-  // y = (y_voltage - y_zeroG) / y_VperG;
-  // z = (z_voltage - z_zeroG) / z_VperG;
-  x = 0.57;
-  y = 1.90;
-  z = 6.20;
+  x = (x_voltage - x_zeroG) / x_VperG;
+  y = (y_voltage - y_zeroG) / y_VperG;
+  z = (z_voltage - z_zeroG) / z_VperG;
+  // x = 0.57;
+  // y = 1.90;
+  // z = 6.20;
 }
 
 void print_G_Forces()
@@ -259,10 +259,11 @@ void printSensorDataPacket(const SensorDataPacket& packet) {
   Serial.print("EOP: 0x"); Serial.println(packet.eop, HEX);
 }  
 
-int64_t packData(int16_t x, int16_t y, int16_t z) {
-    int64_t packedData = 0;
-    packedData |= ((int64_t)x << 32) & 0xFFFF00000000;
-    packedData |= ((int64_t)y << 16) & 0x0000FFFF0000;
-    packedData |= z & 0x00000000FFFF;
+uint64_t packData(int16_t x, int16_t y, int16_t z) {
+    uint64_t packedData = 0;
+    packedData |= ((uint64_t)x << 32) & 0xFFFF00000000;
+    packedData |= ((uint64_t)y << 16) & 0x0000FFFF0000;
+    packedData |= (uint64_t) z & 0x00000000FFFF;
+    Serial.print("PACKED: "); Serial.println(packedData);
     return packedData;
 }
