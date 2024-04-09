@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "string.h"
+#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -613,8 +614,6 @@ uint32_t dataIndex6 = 0; // Used for buffer indexing
 
 uint8_t crc_calculated = 0; // Placeholder for the calculated CRC
 
-
-
 SensorDataPacket *PutPt1;
 SensorDataPacket *GetPt1;
 SensorDataPacket Fifo1[FIFO_SIZE];
@@ -671,7 +670,7 @@ void InitFifo(void);
 uint8_t tx_data[8];
 uint8_t rx_data[8]={0,0,0,0,0,0,0,0};
 uint8_t rx_data_sender[8]={0,0,0,0,0,0,0,0};
-
+volatile bool spiReady = 1;
 
 /////// reset pin for TX is B7   GPIOB GPIO_PIN_7
 /////// reset pin for RX is E4   GPIOE, GPIO_PIN_4
@@ -1569,6 +1568,8 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef * hspi)
 		//HAL_Delay(500);
 	}
 	else if (hspi->Instance == SPI5){
+		// Signal that SPI transmission is complete
+		spiReady = true; // Set the flag to indicate SPI is ready for the next transmission
 		HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1); //yellow
 	}
 
@@ -1713,10 +1714,15 @@ void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, ui
 
         	}
         	*/
-        	for(size_t i = 0; i < sizeof(SensorDataPacket); i++) {
-        	    uint8_t* bytePtr = ((uint8_t*)sensorData) + i; // Point to each byte in sequence
-        	    HAL_SPI_Transmit(&hspi5, bytePtr, 1, 100); // Transmit one byte at a time
+//        	for(size_t i = 0; i < sizeof(SensorDataPacket); i++) {
+//        	    uint8_t* bytePtr = ((uint8_t*)sensorData) + i; // Point to each byte in sequence
+//        	    HAL_SPI_Transmit(&hspi5, bytePtr, 1, 100); // Transmit one byte at a time
+//        	}
+        	if(spiReady) {
+        		spiReady = false; // Clear the flag to indicate SPI is busy
+        	    HAL_SPI_Transmit_IT(&hspi5, (uint8_t*)sensorData, sizeof(SensorDataPacket)); // Transmit the data over SPI
         	}
+//        	HAL_SPI_Transmit(&hspi5, (uint8_t*)sensorData, sizeof(SensorDataPacket), 100);
 
 //        	HAL_SPI_Transmit(&hspi5, (uint8_t*)sensorData, sizeof(*sensorData), 100);
         	//uint8_t test_val[17] = {'Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z'};

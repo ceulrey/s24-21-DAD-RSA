@@ -60,8 +60,8 @@ all: main-build
 main-build: s24_21_DAD.elf secondary-outputs
 
 # Tool invocations
-s24_21_DAD.elf s24_21_DAD.map: $(OBJS) $(USER_OBJS) C:\Users\Clayton\STM32CubeIDE\workspace_1.14.1\s24_21_DAD\STM32H723ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "s24_21_DAD.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\Clayton\STM32CubeIDE\workspace_1.14.1\s24_21_DAD\STM32H723ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="s24_21_DAD.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+s24_21_DAD.elf s24_21_DAD.map: $(OBJS) $(USER_OBJS) C:\Users\boern\Documents\College\Senior\ Design\Code\s24-21-DAD-RSA\s24_21_DAD\STM32H723ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "s24_21_DAD.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\boern\Documents\College\Senior Design\Code\s24-21-DAD-RSA\s24_21_DAD\STM32H723ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="s24_21_DAD.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -68,6 +68,8 @@ typedef struct {
   uint8_t eop;
 } SensorDataPacket;
 
+#define PACKET_SIZE sizeof(SensorDataPacket)
+
 typedef enum { // FSM States
     UART_WAIT_FOR_SOP,
     UART_DATATYPE,
@@ -80,14 +82,18 @@ typedef enum { // FSM States
 } UART_State_t;
 
 // Declaration for USART1
-uint8_t rx_data1[1];
+uint8_t rx_data1[PACKET_SIZE];
 SensorDataPacket sensorData1;
 UART_State_t uartState1 = UART_WAIT_FOR_SOP;
 uint32_t timestampBuffer1;
 uint64_t dataBuffer1;
 uint32_t dataIndex1 = 0; // Used for buffer indexing
 
+uint8_t spi_rx_buffer[PACKET_SIZE];
+uint16_t spi_rx_count = 0;
 uint8_t test_five = 0;
+SensorDataPacket receivedPacket;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -116,29 +122,74 @@ uint8_t test_data_count = 0;
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi){
-    if(hspi->Instance == SPI1) {
-        // Process data from USART1
-    	//printData(&sensorData1);
-//    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
-//    	HAL_UART_Transmit(&huart3, rx_data1, 1, 100);
-//    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
-    	processSPIData(hspi, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
-//    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
-    }
-
-//    test_data_count++;
-//    if(test_data_count == 1){
-//    	test_data_count = 0;
+//void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi){
+//    if(hspi->Instance == SPI1) {
+//        // Process data from USART1
+//    	//printData(&sensorData1);
 ////    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
-//
+////    	HAL_UART_Transmit(&huart3, rx_data1, 1, 100);
+////    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+//    	processSPIData(hspi, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
+////    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
 //    }
-    HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+//
+////    test_data_count++;
+////    if(test_data_count == 1){
+////    	test_data_count = 0;
+//////    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
+////
+////    }
+//    HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+//
+//
+////    HAL_SPI_Receive_IT(&hspi1, (uint8_t*)&sensorData1, sizeof(sensorData1));
+//
+//}
 
+//void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi){
+//    if(hspi->Instance == SPI1) {
+//        char debugOutput[32];
+//        sprintf(debugOutput, "Rx: 0x%X\r\n", rx_data1[0]);
+//        HAL_UART_Transmit(&huart3, (uint8_t*)debugOutput, strlen(debugOutput), 100);
+//        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+//        HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+//    }
+//}
 
-//    HAL_SPI_Receive_IT(&hspi1, (uint8_t*)&sensorData1, sizeof(sensorData1));
+// This function is called when the SPI receives data
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
+    if (hspi->Instance == SPI1) {
+        // String to store the output for debugging
+        char debugOutput[PACKET_SIZE * 3 + 1]; // Each byte could use up to 3 characters in text (2 hex digits and a space) + null terminator
+        int offset = 0;
 
+        // Convert the received data to hexadecimal string for UART transmission
+        for (int i = 0; i < PACKET_SIZE; i++) {
+            offset += snprintf(debugOutput + offset, sizeof(debugOutput) - offset, "%02X ", rx_data1[i]);
+            if (offset >= sizeof(debugOutput)) break; // Safety check to prevent buffer overflow
+        }
+
+        // Transmit the formatted string over UART3
+        HAL_UART_Transmit(&huart3, (uint8_t*)debugOutput, strlen(debugOutput), 100);
+
+        // Now, process each byte of the received packet through the FSM
+        for (int i = 0; i < PACKET_SIZE; i++) {
+            // Pass each byte of the packet to the FSM
+        	processSPIData(hspi, &sensorData1, &rx_data1[i], &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
+        }
+
+        // Ready to receive the next packet
+        HAL_SPI_Receive_DMA(hspi, rx_data1, PACKET_SIZE);
+    }
 }
+
+// This function is called in case of an error on SPI
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
+    // Handle your error here
+    // After handling the error, re-arm the SPI receive interrupt
+	HAL_SPI_Receive_DMA(hspi, rx_data1, PACKET_SIZE);
+}
+
 
 void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_t *rxData,
                      UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex) {    // Your existing switch case logic here, adapted for the specific sensorData and rx_data
@@ -232,17 +283,18 @@ void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_
 //                if (validateCRC(&sensorData)) {
 //                    processData(&sensorData); // Process the data
 //                }
-        	test_five++;
-        	if(test_five == 5){
-        		printData(sensorData); // Process the data
-        		test_five = 0;
-        	}
+//        	test_five++;
+//        	if(test_five == 5){
+//        		printData(sensorData); // Process the data
+//        		test_five = 0;
+//        	}
+    		printData(sensorData); // Process the data
+//        	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
         	resetUartState(uartState, timestampBuffer, dataBuffer, dataIndex, rxData);
-
             break;
     }
     // Ready to receive the next byte
-    HAL_SPI_Receive_IT(SPI, rxData, 1);
+    HAL_SPI_Receive_DMA(SPI, rxData, 1);
 }
 
 void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex, uint8_t *rxData) {
@@ -257,10 +309,10 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
-int validateCRC(const SensorDataPacket *packet) {
-//     Placeholder function to validate CRC - replace with actual CRC calculation
-    return packet->crc == crc_calculated;
-}
+//int validateCRC(const SensorDataPacket *packet) {
+////     Placeholder function to validate CRC - replace with actual CRC calculation
+//    return packet->crc == crc_calculated;
+//}
 
 void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
@@ -371,7 +423,7 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+  HAL_SPI_Receive_DMA(&hspi1, rx_data1, PACKET_SIZE);
 
   /* USER CODE END 2 */
 
@@ -380,7 +432,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    MX_USB_HOST_Process();
+//    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
   }
