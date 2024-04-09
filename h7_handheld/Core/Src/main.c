@@ -46,6 +46,7 @@ I2C_HandleTypeDef hi2c1;
 I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_rx;
 
 UART_HandleTypeDef huart3;
 
@@ -86,11 +87,13 @@ uint32_t timestampBuffer1;
 uint64_t dataBuffer1;
 uint32_t dataIndex1 = 0; // Used for buffer indexing
 
+uint8_t test_five = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
@@ -101,9 +104,9 @@ void MX_USB_HOST_Process(void);
 void resetState(void);
 int validateCRC(const SensorDataPacket *packet);
 void printData(const SensorDataPacket *packet);
-void processSPIData(SPI_HandleTypeDef *spi, SensorDataPacket *sensorData, uint8_t *rxData,
+void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_t *rxData,
                      UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex);
-void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer);
+void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex, uint8_t *rxData);
 void unpackData(uint64_t packedData, int16_t* x, int16_t* y, int16_t* z);
 
 uint8_t test_data_count = 0;
@@ -117,14 +120,15 @@ void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_
                      UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex) {    // Your existing switch case logic here, adapted for the specific sensorData and rx_data
     // This function needs to be adapted from your existing HAL_UART_RxCpltCallback logic
 	uint8_t rxByte = *rxData; // The received byte
-//    	sprintf(buffer, "RxByte: 0x%08lX\r\n", rxByte);
-//    	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100); // Print debug info
+//    sprintf(buffer, "RxByte: 0x%08lX\r\n", rxByte);
+//    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100); // Print debug info
     switch (*uartState) {
         case UART_WAIT_FOR_SOP: // SOP Case
             if (rxByte == 0x53) { // SOP byte = 0x53 ('S')
             	sensorData->sop = rxByte; // Set the sop
             	*uartState = UART_DATATYPE;
-//                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+//            	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+//                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
             }
             break;
         case UART_DATATYPE: // Data type Case
@@ -136,7 +140,7 @@ void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_
         	sensorData->sensorId = rxByte; // Set the sensor ID (000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
         	*dataIndex = 0; // Reset dataIndex for the next field
             *uartState = UART_TIMESTAMP; // Next parameter
-//                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+            HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
             break;
 
         case UART_TIMESTAMP: // Timestamp Case
@@ -204,18 +208,25 @@ void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_
 //                if (validateCRC(&sensorData)) {
 //                    processData(&sensorData); // Process the data
 //                }
-        	printData(sensorData); // Process the data
-        	resetUartState(uartState, timestampBuffer, dataBuffer);
+        	test_five++;
+        	if(test_five == 5){
+        		printData(sensorData); // Process the data
+        		test_five = 0;
+        	}
+        	resetUartState(uartState, timestampBuffer, dataBuffer, dataIndex, rxData);
+
             break;
     }
     // Ready to receive the next byte
-    HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+    HAL_SPI_Receive_DMA(SPI, rxData, 1);
 }
 
-void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer) {
+void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex, uint8_t *rxData) {
     *uartState = UART_WAIT_FOR_SOP; // Reset UART state
     *timestampBuffer = 0; // Clear the timestamp buffer
     *dataBuffer = 0; // Clear the data buffer
+    *dataIndex = 0;
+    *rxData = 0;
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
@@ -229,7 +240,6 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
 
 void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
-    char buffer2[100]; // Ensure the buffer is large enough for all the data
     double data;
     // Assuming the data field is treated as fixed-point and needs to be converted back to float
     if(packet->datatype != VIBRATION){
@@ -327,6 +337,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
   MX_I2S3_Init();
   MX_SPI1_Init();
@@ -334,7 +345,7 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+  HAL_SPI_Receive_DMA(&hspi1, rx_data1, 1);
 
   /* USER CODE END 2 */
 
@@ -534,6 +545,22 @@ static void MX_USART3_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -634,21 +661,24 @@ static void MX_GPIO_Init(void)
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi){
     if(hspi->Instance == SPI1) {
         // Process data from USART1
-    	printData(&sensorData1);
-    	//processSPIData(hspi, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
+    	//printData(&sensorData1);
+//    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
+//    	HAL_UART_Transmit(&huart3, rx_data1, 1, 100);
+//    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+    	processSPIData(hspi, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
+//    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
     }
 
-    test_data_count++;
-    if(test_data_count == 1){
-    	test_data_count = 0;
-    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
-
-    }
-
-
-    HAL_SPI_Receive_IT(&hspi1, (uint8_t*)&sensorData1, sizeof(sensorData1));
+//    test_data_count++;
+//    if(test_data_count == 1){
+//    	test_data_count = 0;
+////    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
+//
+//    }
+    HAL_SPI_Receive_DMA(&hspi1, rx_data1, 1);
 
 
+//    HAL_SPI_Receive_IT(&hspi1, (uint8_t*)&sensorData1, sizeof(sensorData1));
 
 }
 
