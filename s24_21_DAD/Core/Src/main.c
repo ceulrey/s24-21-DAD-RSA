@@ -1718,7 +1718,7 @@ void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, ui
         	    HAL_SPI_Transmit(&hspi5, bytePtr, 1, 100); // Transmit one byte at a time
         	}
 
-        	//HAL_SPI_Transmit(&hspi5, (uint8_t*)sensorData, sizeof(*sensorData), 100);
+//        	HAL_SPI_Transmit(&hspi5, (uint8_t*)sensorData, sizeof(*sensorData), 100);
         	//uint8_t test_val[17] = {'Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z','Z'};
         	//uint8_t test_val = 'Z';
         	//HAL_SPI_Transmit(&hspi5, (uint8_t*)&test_val, 1, 100);

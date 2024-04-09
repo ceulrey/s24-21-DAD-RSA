@@ -116,6 +116,30 @@ uint8_t test_data_count = 0;
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi){
+    if(hspi->Instance == SPI1) {
+        // Process data from USART1
+    	//printData(&sensorData1);
+//    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
+//    	HAL_UART_Transmit(&huart3, rx_data1, 1, 100);
+//    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+    	processSPIData(hspi, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
+//    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+    }
+
+//    test_data_count++;
+//    if(test_data_count == 1){
+//    	test_data_count = 0;
+////    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
+//
+//    }
+    HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
+
+
+//    HAL_SPI_Receive_IT(&hspi1, (uint8_t*)&sensorData1, sizeof(sensorData1));
+
+}
+
 void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_t *rxData,
                      UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex) {    // Your existing switch case logic here, adapted for the specific sensorData and rx_data
     // This function needs to be adapted from your existing HAL_UART_RxCpltCallback logic
@@ -140,7 +164,7 @@ void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_
         	sensorData->sensorId = rxByte; // Set the sensor ID (000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
         	*dataIndex = 0; // Reset dataIndex for the next field
             *uartState = UART_TIMESTAMP; // Next parameter
-            HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+//            HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
             break;
 
         case UART_TIMESTAMP: // Timestamp Case
@@ -218,7 +242,7 @@ void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_
             break;
     }
     // Ready to receive the next byte
-    HAL_SPI_Receive_DMA(SPI, rxData, 1);
+    HAL_SPI_Receive_IT(SPI, rxData, 1);
 }
 
 void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex, uint8_t *rxData) {
@@ -233,10 +257,10 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
-//int validateCRC(const SensorDataPacket *packet) {
-    // Placeholder function to validate CRC - replace with actual CRC calculation
-////    return packet->crc == crc_calculated;
-//}
+int validateCRC(const SensorDataPacket *packet) {
+//     Placeholder function to validate CRC - replace with actual CRC calculation
+    return packet->crc == crc_calculated;
+}
 
 void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
@@ -286,7 +310,9 @@ void printData(const SensorDataPacket *packet) {
 //        sprintf(buffer2, "Data: %lu\r\n", packet->data);
         sprintf(buffer, "X: %.2f G\tY: %.2f G\tZ: %.2f G\r\n", x_float, y_float, z_float);
     }
-//    HAL_UART_Transmit(&huart3, (uint8_t*)buffer2, strlen(buffer), 100);
+    else{
+    	sprintf(buffer, "Bad Data Type", data);
+    }
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 
     // CRC - Hexadecimal
@@ -345,7 +371,7 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_SPI_Receive_DMA(&hspi1, rx_data1, 1);
+  HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
 
   /* USER CODE END 2 */
 
@@ -657,30 +683,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi){
-    if(hspi->Instance == SPI1) {
-        // Process data from USART1
-    	//printData(&sensorData1);
-//    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
-//    	HAL_UART_Transmit(&huart3, rx_data1, 1, 100);
-//    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
-    	processSPIData(hspi, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
-//    	HAL_SPI_Receive_IT(&hspi1, rx_data1, 1);
-    }
-
-//    test_data_count++;
-//    if(test_data_count == 1){
-//    	test_data_count = 0;
-////    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13); //orange
-//
-//    }
-    HAL_SPI_Receive_DMA(&hspi1, rx_data1, 1);
-
-
-//    HAL_SPI_Receive_IT(&hspi1, (uint8_t*)&sensorData1, sizeof(sensorData1));
-
-}
 
 /* USER CODE END 4 */
 
