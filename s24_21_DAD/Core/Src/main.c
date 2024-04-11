@@ -19,10 +19,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "string.h"
-#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stdbool.h"
 
 /* USER CODE END Includes */
 
@@ -573,12 +573,17 @@ DMA_HandleTypeDef hdma_spi1_tx;
 
 TIM_HandleTypeDef htim16;
 
+UART_HandleTypeDef huart4;
+UART_HandleTypeDef huart5;
+UART_HandleTypeDef huart7;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 UART_HandleTypeDef huart6;
 
 /* USER CODE BEGIN PV */
+
+uint8_t test_U2 = 0;
 
 uint8_t rx_data1[1];
 SensorDataPacket sensorData1;
@@ -603,6 +608,22 @@ uint32_t timestampBuffer3;
 uint64_t dataBuffer3;
 uint32_t dataIndex3 = 0; // Used for buffer indexing
 
+// Declaration for UART4
+uint8_t rx_data4[1];
+SensorDataPacket sensorData4;
+UART_State_t uartState4 = UART_WAIT_FOR_SOP;
+uint32_t timestampBuffer4;
+uint64_t dataBuffer4;
+uint32_t dataIndex4 = 0; // Used for buffer indexing
+
+// Declaration for UART5
+uint8_t rx_data5[1];
+SensorDataPacket sensorData5;
+UART_State_t uartState5 = UART_WAIT_FOR_SOP;
+uint32_t timestampBuffer5;
+uint64_t dataBuffer5;
+uint32_t dataIndex5 = 0; // Used for buffer indexing
+
 
 // Declaration for USART6
 uint8_t rx_data6[1];
@@ -611,6 +632,14 @@ UART_State_t uartState6 = UART_WAIT_FOR_SOP;
 uint32_t timestampBuffer6;
 uint64_t dataBuffer6;
 uint32_t dataIndex6 = 0; // Used for buffer indexing
+
+// Declaration for UART7
+uint8_t rx_data7[1];
+SensorDataPacket sensorData7;
+UART_State_t uartState7 = UART_WAIT_FOR_SOP;
+uint32_t timestampBuffer7;
+uint64_t dataBuffer7;
+uint32_t dataIndex7 = 0; // Used for buffer indexing
 
 uint8_t crc_calculated = 0; // Placeholder for the calculated CRC
 
@@ -649,6 +678,9 @@ static void MX_SPI1_Init(void);
 static void MX_SPI5_Init(void);
 static void MX_ETH_Init(void);
 static void MX_TIM16_Init(void);
+static void MX_UART4_Init(void);
+static void MX_UART5_Init(void);
+static void MX_UART7_Init(void);
 /* USER CODE BEGIN PFP */
 
 void resetState(void);
@@ -732,9 +764,18 @@ int main(void)
   MX_SPI5_Init();
   MX_ETH_Init();
   MX_TIM16_Init();
+  MX_UART4_Init();
+  MX_UART5_Init();
+  MX_UART7_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_UART_Receive_IT(&huart1, rx_data1, 1);
   HAL_UART_Receive_IT(&huart2, rx_data2, 1);
+  HAL_UART_Receive_IT(&huart3, rx_data3, 1);
+  HAL_UART_Receive_IT(&huart4, rx_data4, 1);
+  HAL_UART_Receive_IT(&huart5, rx_data5, 1);
+  HAL_UART_Receive_IT(&huart6, rx_data6, 1);
+  HAL_UART_Receive_IT(&huart7, rx_data7, 1);
   //chip reset
   //CC1200_Reset();
   //HAL_Delay(100);
@@ -757,8 +798,6 @@ int main(void)
   //HAL_UART_Receive_IT(&huart1, rx_data1, 1);
   //HAL_UART_Receive_IT(&huart2, rx_data2, 1);
   //HAL_UART_Receive_IT(&huart3, rx_data3, 1);
-  HAL_UART_Receive_IT(&huart6, rx_data6, 1);
-
   //HAL_TIM_Base_Start_IT(&htim16);
 
   /* USER CODE END 2 */
@@ -1011,6 +1050,150 @@ static void MX_TIM16_Init(void)
 }
 
 /**
+  * @brief UART4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART4_Init(void)
+{
+
+  /* USER CODE BEGIN UART4_Init 0 */
+
+  /* USER CODE END UART4_Init 0 */
+
+  /* USER CODE BEGIN UART4_Init 1 */
+
+  /* USER CODE END UART4_Init 1 */
+  huart4.Instance = UART4;
+  huart4.Init.BaudRate = 921600;
+  huart4.Init.WordLength = UART_WORDLENGTH_8B;
+  huart4.Init.StopBits = UART_STOPBITS_1;
+  huart4.Init.Parity = UART_PARITY_NONE;
+  huart4.Init.Mode = UART_MODE_TX_RX;
+  huart4.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart4.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart4.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart4.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart4.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart4, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart4, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART4_Init 2 */
+
+  /* USER CODE END UART4_Init 2 */
+
+}
+
+/**
+  * @brief UART5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART5_Init(void)
+{
+
+  /* USER CODE BEGIN UART5_Init 0 */
+
+  /* USER CODE END UART5_Init 0 */
+
+  /* USER CODE BEGIN UART5_Init 1 */
+
+  /* USER CODE END UART5_Init 1 */
+  huart5.Instance = UART5;
+  huart5.Init.BaudRate = 921600;
+  huart5.Init.WordLength = UART_WORDLENGTH_8B;
+  huart5.Init.StopBits = UART_STOPBITS_1;
+  huart5.Init.Parity = UART_PARITY_NONE;
+  huart5.Init.Mode = UART_MODE_TX_RX;
+  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart5.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart5.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart5.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart5, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart5, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART5_Init 2 */
+
+  /* USER CODE END UART5_Init 2 */
+
+}
+
+/**
+  * @brief UART7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART7_Init(void)
+{
+
+  /* USER CODE BEGIN UART7_Init 0 */
+
+  /* USER CODE END UART7_Init 0 */
+
+  /* USER CODE BEGIN UART7_Init 1 */
+
+  /* USER CODE END UART7_Init 1 */
+  huart7.Instance = UART7;
+  huart7.Init.BaudRate = 921600;
+  huart7.Init.WordLength = UART_WORDLENGTH_8B;
+  huart7.Init.StopBits = UART_STOPBITS_1;
+  huart7.Init.Parity = UART_PARITY_NONE;
+  huart7.Init.Mode = UART_MODE_TX_RX;
+  huart7.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart7.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart7.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart7.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart7.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart7, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart7, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART7_Init 2 */
+
+  /* USER CODE END UART7_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -1074,7 +1257,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 921600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -1122,7 +1305,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 921600;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
@@ -1170,7 +1353,7 @@ static void MX_USART6_UART_Init(void)
 
   /* USER CODE END USART6_Init 1 */
   huart6.Instance = USART6;
-  huart6.Init.BaudRate = 115200;
+  huart6.Init.BaudRate = 921600;
   huart6.Init.WordLength = UART_WORDLENGTH_8B;
   huart6.Init.StopBits = UART_STOPBITS_1;
   huart6.Init.Parity = UART_PARITY_NONE;
@@ -1579,23 +1762,38 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef * hspi)
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	//test_U2++;
+	//if(test_U2 == 2){
     if(huart->Instance == USART1) {
         // Process data from USART1
     	processUartData(huart, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
     }
     else if(huart->Instance == USART2) {
         // Process data from USART2
+    	//test_U2++;
     	processUartData(huart, &sensorData2, rx_data2, &uartState2, &timestampBuffer2, &dataBuffer2, &dataIndex2);
     }
     else if(huart->Instance == USART3) {
         // Process data from USART2
     	processUartData(huart, &sensorData3, rx_data3, &uartState3, &timestampBuffer3, &dataBuffer3, &dataIndex3);
     }
-
+    else if(huart->Instance == UART4) {
+        // Process data from USART2
+    	processUartData(huart, &sensorData4, rx_data4, &uartState4, &timestampBuffer4, &dataBuffer4, &dataIndex4);
+    }
+    else if(huart->Instance == UART5) {
+        // Process data from USART2
+    	processUartData(huart, &sensorData5, rx_data5, &uartState5, &timestampBuffer5, &dataBuffer5, &dataIndex5);
+    }
     else if(huart->Instance == USART6) {
         // Process data from USART2
     	processUartData(huart, &sensorData6, rx_data6, &uartState6, &timestampBuffer6, &dataBuffer6, &dataIndex6);
     }
+    else if(huart->Instance == UART7) {
+        // Process data from USART2
+    	processUartData(huart, &sensorData7, rx_data7, &uartState7, &timestampBuffer7, &dataBuffer7, &dataIndex7);
+    }
+	//}
 
     // Re-enable UART reception interrupt correctly for each port
     if (huart->Instance == USART1) {
@@ -1607,8 +1805,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     else if (huart->Instance == USART3) {
     	HAL_UART_Receive_IT(&huart3, rx_data3, 1);
     }
+    else if (huart->Instance == UART4) {
+        HAL_UART_Receive_IT(&huart4, rx_data4, 1);
+    }
+    else if (huart->Instance == UART5) {
+    	HAL_UART_Receive_IT(&huart5, rx_data5, 1);
+    }
     else if (huart->Instance == USART6) {
     	HAL_UART_Receive_IT(&huart6, rx_data6, 1);
+    }
+    else if (huart->Instance == UART7) {
+    	HAL_UART_Receive_IT(&huart7, rx_data7, 1);
     }
 }
 
@@ -1682,15 +1889,12 @@ void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, ui
             if (rxByte == 0x45) { // EOP byte = 0x45 ('E')
                 *uartState = UART_DONE; // Packet reception is complete
                 sensorData->eop = rxByte; // Set the eop
-                if(huart->Instance == USART1){
-                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET); // Red LED set when packet is complete
-                }
-                else if(huart->Instance == USART2){
-                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
-                }
-                else if(huart->Instance == UART4){
-                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET); // Blue LED set when packet is complete
-                }
+//                if(huart->Instance == USART1){
+//                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET); // Red LED set when packet is complete
+//                }
+//                else if(huart->Instance == USART2){
+//                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+//                }
 //                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
             } else {
 //                    uartState = UART_DONE; // Packet reception is complete
@@ -1932,10 +2136,10 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
     *uartState = UART_WAIT_FOR_SOP; // Reset UART state
     *timestampBuffer = 0; // Clear the timestamp buffer
     *dataBuffer = 0; // Clear the data buffer
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
 /* USER CODE END 4 */

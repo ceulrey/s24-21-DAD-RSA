@@ -2,98 +2,84 @@
   ******************************************************************************
   * @file           : custom_uart.ino
   * @brief          : Packet transmission for the sensor nodes
-  * @date			      : 2/20/24
-  * @author			    : S24-21
-  *******************************************************************************/
+  * @date           : 2/20/24
+  * @author         : S24-21
+  ******************************************************************************
+*/
 
-#define BAUD 115200       // using 115200 baud rate
+#define BAUD 921600       // using 115200 baud rate
 #define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
 #include "Arduino.h"
-// A16 is the TX Pin, A0 is the RX Pin
-// 7 is the TX Pin, 6 is the RX Pin
-const pin_size_t TX_PIN = 9;
-const pin_size_t RX_PIN = 10;
-// const PinName TX_PIN = D42;
-// const PinName RX_PIN = D43;
-// UART NanoSerial(TX_PIN, RX_PIN);
-// UART Serial1(9, 10);
-UART NanoSerial(A16, A0);
+
+const pin_size_t TX_PIN = 9;  // Example TX Pin
+const pin_size_t RX_PIN = 10; // Example RX Pin
+
+UART NanoSerial(A16, A0);  // Custom UART setup (using pins A16 for TX, A0 for RX)
 
 // Custom UART Packet Design
 struct SensorDataPacket {
-  uint8_t sop;        // 1 byte
-  uint8_t datatype;   // 1 byte
-  uint8_t sensorId;   // 1 byte
-  uint32_t timestamp; // 4 bytes
-  uint64_t data;      // 8 bytes
-  uint8_t crc;        // 1 byte
-  uint8_t eop;        // 1 byte
-                      // Total Size: 17 bytes
+  uint8_t sop;         // Start of packet
+  uint8_t datatype;    // Data type (1 byte)
+  uint8_t sensorId;    // Sensor ID (1 byte)
+  uint32_t timestamp;  // Timestamp in milliseconds (4 bytes)
+  int64_t data;        // Sensor data (8 bytes, fixed-point format)
+  uint8_t crc;         // CRC for error checking (1 byte)
+  uint8_t eop;         // End of packet (1 byte)
 };
 
 void setup() {
-  // NanoSerial.begin(BAUD, CONFIG);
   Serial.begin(BAUD, CONFIG);
   NanoSerial.begin(BAUD, CONFIG);
 }
 
 void loop() {
+  static unsigned long lastSampleTime = 0;  // Stores the last sample time in milliseconds
+  unsigned long currentMillis = millis();   // Current time in milliseconds
 
-  int S = analogRead(A15);
-  // Construct packet 
-  SensorDataPacket packet;
-  packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
-  packet.datatype = 0b10;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
-  packet.sensorId = 0b011;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
-  packet.timestamp = now();                                                          // Time when Data Captured
-  packet.data = (uint64_t) S;                                            // Data Field
-  packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
-  packet.eop = 0x45;                                                                 // Stop Byte ('E' in ASCII)
+  // Sampling period in milliseconds for 44.1 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
+  const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
 
-  // Print packet before sending
-  printSensorDataPacket(packet);
+  if (currentMillis - lastSampleTime >= samplingPeriod) {
+    lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
 
-  // Send packet over UART (serial)
-  sendSensorDataPacket(packet);
-  delay(250); // delay 1 second
+    int S = analogRead(A15);  // Read the sound sample
+    // int64_t fixedPointData = static_cast<int64_t>(S * 100);  // Convert to fixed-point format
+
+    // Construct the packet
+    SensorDataPacket packet;
+    packet.sop = 0x53;  // 'S' Start of packet
+    packet.datatype = 0b10;  // Data Type: Sound = 10
+    packet.sensorId = 0b011;  // Sensor ID for illustration
+    packet.timestamp = currentMillis;  // Timestamp in milliseconds
+    packet.data = S;  // Sound data in fixed-point
+    packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc));  // CRC
+    packet.eop = 0x45;  // 'E' End of packet
+
+    sendSensorDataPacket(packet);  // Send the packet
+    printSensorDataPacket(packet);  // Print packet details for debugging
+  }
 }
 
-// Placeholder function to return a timestamp (number of seconds since the Arduino started)
-uint32_t now() {
-  return (uint32_t) millis() / 1000; // in secs
-}
-
-// Placeholder function for CRC calculation, need a CRC algorithm here eventually
 uint8_t calculateCRC(uint8_t *data, size_t len) {
   uint8_t crc = 0;
-  for (size_t i = 0; i < len; ++i) { // simple XOR checksum, not a real CRC
+  for (size_t i = 0; i < len; ++i) {
     crc ^= data[i];
   }
-  return crc; 
+  return crc;
 }
 
-// Function to send a packet
 void sendSensorDataPacket(SensorDataPacket& packet) {
-  Serial.write((uint8_t*)&packet, sizeof(packet));
-  // NanoSerial.write((uint8_t*)&packet, sizeof(packet));
   NanoSerial.write((uint8_t*)&packet, sizeof(packet));
 }
 
-// void sendSensorDataPacket(SensorDataPacket& packet) {
-//   uint8_t *packetPointer = (uint8_t*)&packet;
-//   for (size_t i = 0; i < sizeof(packet); i++) {
-//     Serial.write(packetPointer[i]);
-//     Serial1.write(packetPointer[i]);
-//   }
-// }
-
-// Print out the UART packet over serial for debugging purposes
 void printSensorDataPacket(const SensorDataPacket& packet) {
   Serial.print("\nSOP: 0x"); Serial.println(packet.sop, HEX);
   Serial.print("Data Type: "); Serial.println(packet.datatype);
   Serial.print("Sensor ID: "); Serial.println(packet.sensorId);
-  Serial.print("Timestamp: "); Serial.println(packet.timestamp);
-  Serial.print("Data: "); Serial.println((long)packet.data);
+  Serial.print("Timestamp (ms): "); Serial.println(packet.timestamp);
+  Serial.print("Data (fixed-point): "); Serial.println(packet.data);
   Serial.print("CRC: 0x"); Serial.println(packet.crc, HEX);
   Serial.print("EOP: 0x"); Serial.println(packet.eop, HEX);
-}  
+}
+
+

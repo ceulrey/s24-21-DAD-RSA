@@ -53,7 +53,7 @@
 #define rtd_pin A2
 #define ref_pin A3
 
-#define BAUD 115200       // using 115200 baud rate
+#define BAUD 921600       // using 115200 baud rate
 #define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
 #include "Arduino.h"
 
@@ -117,6 +117,15 @@ void setup()
 
 void loop()
 {
+  static unsigned long lastSampleTime = 0;  // Stores the last sample time in milliseconds
+  unsigned long currentMillis = millis();   // Current time in milliseconds
+
+  // Sampling period in milliseconds for 44.1 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
+  const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
+
+  if (currentMillis - lastSampleTime >= samplingPeriod) {
+    lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
+
    // Find raw inputs for both Wheatstone Bridge Terminals
   find_raw_inputs();
 
@@ -136,30 +145,28 @@ void loop()
   // Find the temperature in degrees Celsius
   T = find_temperature(Rx);
 
-  // Convert temperature to fixed-point representation
-  int64_t fixedPointData = static_cast<int64_t>(30.76 * 100);  // Assuming T is your temperature in Celsius
+  int64_t fixedPointData = static_cast<int64_t>(T * 100);  // Assuming T is your temperature in Celsius
 
-  // Construct packet 
-  SensorDataPacket packet;
-  packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
-  packet.datatype = 0b00;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
-  packet.sensorId = 0b111;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
-  packet.timestamp = now();                                                          // Time when Data Captured
-  // packet.data = T;                                                                   // Data Field
-  packet.data = fixedPointData;  
-  packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
-  packet.eop = 0x45;     
-  
-  // Print the temperature in Celsius and Fahrenheit
-  print_temperature(T);
+    // Construct packet 
+    SensorDataPacket packet;
+    packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
+    packet.datatype = 0b00;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+    packet.sensorId = 0b111;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+    packet.timestamp = currentMillis;                                                          // Time when Data Captured
+    // packet.data = T;                                                                   // Data Field
+    packet.data = fixedPointData;  
+    packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
+    packet.eop = 0x45;     
+    
+    // Print the temperature in Celsius and Fahrenheit
+    // print_temperature(T);
 
-  // Print packet before sending
-  printSensorDataPacket(packet);
+    // Print packet before sending
+    printSensorDataPacket(packet);
 
-  sendSensorDataPacket(packet);
+    sendSensorDataPacket(packet);
+  }
 
-	// delay(200);
-  delay(500); // delay 1 second
 }
 
 // Placeholder function to return a timestamp (number of seconds since the Arduino started)

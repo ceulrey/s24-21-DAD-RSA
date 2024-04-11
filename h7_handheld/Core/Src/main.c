@@ -114,6 +114,7 @@ void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_
                      UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex);
 void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex, uint8_t *rxData);
 void unpackData(uint64_t packedData, int16_t* x, int16_t* y, int16_t* z);
+void printRawData(const SensorDataPacket *packet);
 
 uint8_t test_data_count = 0;
 
@@ -288,6 +289,7 @@ void processSPIData(SPI_HandleTypeDef *SPI, SensorDataPacket *sensorData, uint8_
 //        		printData(sensorData); // Process the data
 //        		test_five = 0;
 //        	}
+//        	printRawData(sensorData);
     		printData(sensorData); // Process the data
 //        	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
         	resetUartState(uartState, timestampBuffer, dataBuffer, dataIndex, rxData);
@@ -318,7 +320,7 @@ void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
     double data;
     // Assuming the data field is treated as fixed-point and needs to be converted back to float
-    if(packet->datatype != VIBRATION){
+    if(packet->datatype != VIBRATION || packet->datatype != SOUND){
         data = packet->data / 100.0;  // Convert fixed-point back to double
     }
 
@@ -350,7 +352,7 @@ void printData(const SensorDataPacket *packet) {
     	sprintf(buffer, "Hum: %.2f %%\r\n", data);
     }
     else if(packet->datatype == SOUND){
-    	sprintf(buffer, "Sound: %.2f dB\r\n", data);
+    	sprintf(buffer, "Sound: %lu dB\r\n", packet->data);
     }
     else if (packet->datatype == VIBRATION) {
         int16_t x, y, z;
@@ -378,6 +380,14 @@ void printData(const SensorDataPacket *packet) {
     // Separator
     HAL_UART_Transmit(&huart3, (uint8_t*)"--------\r\n", 10, 100);
 }
+
+void printRawData(const SensorDataPacket *packet) {
+    char buffer[100]; // Ensure the buffer is large enough for all the data
+
+    sprintf(buffer, "%lu\r\n", packet->data);
+    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+}
+
 
 void unpackData(uint64_t packedData, int16_t* x, int16_t* y, int16_t* z) {
     *x = (int16_t)((packedData >> 32) & 0xFFFF);
@@ -605,7 +615,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 921600;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
