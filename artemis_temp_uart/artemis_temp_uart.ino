@@ -123,10 +123,7 @@ void loop()
   // Sampling period in milliseconds for 44.1 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
   const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
 
-  if (currentMillis - lastSampleTime >= samplingPeriod) {
-    lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
-
-   // Find raw inputs for both Wheatstone Bridge Terminals
+     // Find raw inputs for both Wheatstone Bridge Terminals
   find_raw_inputs();
 
   // Convert raw values to voltages
@@ -145,13 +142,18 @@ void loop()
   // Find the temperature in degrees Celsius
   T = find_temperature(Rx);
 
+  print_temperature(T);
+
   int64_t fixedPointData = static_cast<int64_t>(T * 100);  // Assuming T is your temperature in Celsius
+
+  if (currentMillis - lastSampleTime >= samplingPeriod) {
+    lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
 
     // Construct packet 
     SensorDataPacket packet;
     packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
     packet.datatype = 0b00;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
-    packet.sensorId = 0b111;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+    packet.sensorId = 0b110;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
     packet.timestamp = currentMillis;                                                          // Time when Data Captured
     // packet.data = T;                                                                   // Data Field
     packet.data = fixedPointData;  

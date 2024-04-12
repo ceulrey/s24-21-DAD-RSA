@@ -1,7 +1,7 @@
 #define sensor_pin A2
 #define RH_constant 2745 // Relative Humidity Constant * 10
 
-#define BAUD 115200       // using 115200 baud rate
+#define BAUD 921600       // using 115200 baud rate
 #define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
 #include "Arduino.h"
 
@@ -29,6 +29,12 @@ void setup()
 
 void loop()
 {
+  static unsigned long lastSampleTime = 0;  // Stores the last sample time in milliseconds
+  unsigned long currentMillis = millis();   // Current time in milliseconds
+
+  // Sampling period in milliseconds for 44.1 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
+  const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
+
   double T_decay = RCTime();
 
   double humidity = (T_decay - RH_constant) / 24;
@@ -36,25 +42,28 @@ void loop()
   // Convert humidity to fixed-point representation
   int64_t fixedPointData = static_cast<int64_t>(humidity * 100);  // Assuming T is your temperature in Celsius
 
-  // Construct packet 
-  SensorDataPacket packet;
-  packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
-  packet.datatype = 0b01;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
-  packet.sensorId = 0b010;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
-  packet.timestamp = now();                                                          // Time when Data Captured
-  // packet.data = humidity;                                                            // Data Field
-  packet.data = fixedPointData;                                                               // Data Field
-  packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
-  packet.eop = 0x45;   
-  
-  Serial.println(humidity, 10);
+  if (currentMillis - lastSampleTime >= samplingPeriod) {
+    lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
 
-  // Print packet before sending
-  printSensorDataPacket(packet);
+    // Construct packet 
+    SensorDataPacket packet;
+    packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
+    packet.datatype = 0b01;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+    packet.sensorId = 0b100;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+    packet.timestamp = now();                                                          // Time when Data Captured
+    // packet.data = humidity;                                                            // Data Field
+    packet.data = fixedPointData;                                                               // Data Field
+    packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
+    packet.eop = 0x45;   
+    
+    // Serial.println(humidity, 10);
 
-  sendSensorDataPacket(packet);
+    // Print packet before sending
+    printSensorDataPacket(packet);
 
-  delay(500);
+    sendSensorDataPacket(packet);
+  }
+
 }
 
 double RCTime()

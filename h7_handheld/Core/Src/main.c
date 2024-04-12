@@ -22,6 +22,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "string.h"
+#include "Nextion.h"
+#include "stdio.h"
 
 /* USER CODE END Includes */
 
@@ -48,6 +51,7 @@ I2S_HandleTypeDef hi2s3;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
 
+UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
@@ -94,6 +98,20 @@ uint16_t spi_rx_count = 0;
 uint8_t test_five = 0;
 SensorDataPacket receivedPacket;
 
+// DISPLAY VARIABLES
+// Object for the Nextion display
+Nextion nextion;
+NexComp temp_C;
+NexComp temp_F;
+NexComp hum_RH;
+NexComp vib_X;
+NexComp vib_Y;
+NexComp vib_Z;
+NexComp sound_dB;
+
+// Objects for the components. Button1 is for example only.
+//NexComp button1;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,6 +122,7 @@ static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_USART2_UART_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -189,6 +208,11 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
     // Handle your error here
     // After handling the error, re-arm the SPI receive interrupt
 	HAL_SPI_Receive_DMA(hspi, rx_data1, PACKET_SIZE);
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	NextionUpdate(huart, &nextion);
 }
 
 
@@ -318,6 +342,7 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
 
 void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
+    char buffer2[50];
     double data;
     // Assuming the data field is treated as fixed-point and needs to be converted back to float
     if(packet->datatype != VIBRATION || packet->datatype != SOUND){
@@ -353,6 +378,8 @@ void printData(const SensorDataPacket *packet) {
     }
     else if(packet->datatype == SOUND){
     	sprintf(buffer, "Sound: %lu dB\r\n", packet->data);
+    	sprintf(buffer2, "%lu dB", packet->data);
+    	NextionSetText(&nextion, &sound_dB, buffer2);
     }
     else if (packet->datatype == VIBRATION) {
         int16_t x, y, z;
@@ -431,7 +458,16 @@ int main(void)
   MX_SPI1_Init();
   MX_USB_HOST_Init();
   MX_USART3_UART_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  NextionInit(&nextion, &huart2);
+  NextionAddComp(&nextion, &temp_C, "t4", 0, 6, NULL, NULL);
+  NextionAddComp(&nextion, &temp_F, "t5", 0, 7, NULL, NULL);
+  NextionAddComp(&nextion, &hum_RH, "t6", 0, 8, NULL, NULL);
+  NextionAddComp(&nextion, &vib_X, "t7", 0, 9, NULL, NULL);
+  NextionAddComp(&nextion, &vib_Y, "t8", 0, 10, NULL, NULL);
+  NextionAddComp(&nextion, &vib_Z, "t9", 0, 11, NULL, NULL);
+  NextionAddComp(&nextion, &sound_dB, "t10", 0, 12, NULL, NULL);
 
   HAL_SPI_Receive_DMA(&hspi1, rx_data1, PACKET_SIZE);
 
@@ -442,7 +478,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-//    MX_USB_HOST_Process();
+    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
   }
@@ -596,6 +632,39 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 9600;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
 
 }
 

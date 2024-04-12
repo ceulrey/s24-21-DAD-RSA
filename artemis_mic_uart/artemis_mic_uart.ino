@@ -48,8 +48,8 @@ void loop() {
     // Construct the packet
     SensorDataPacket packet;
     packet.sop = 0x53;  // 'S' Start of packet
-    packet.datatype = 0b10;  // Data Type: Sound = 10
-    packet.sensorId = 0b011;  // Sensor ID for illustration
+    packet.datatype = 0b10;  // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+    packet.sensorId = 0b100;  // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
     packet.timestamp = currentMillis;  // Timestamp in milliseconds
     packet.data = S;  // Sound data in fixed-point
     packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc));  // CRC
