@@ -31,7 +31,7 @@
 #define y_pin A3
 #define z_pin A5
 
-#define BAUD 115200       // using 115200 baud rate
+#define BAUD 921600       // using 115200 baud rate
 #define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
 #include "Arduino.h"
 
@@ -93,49 +93,58 @@ void setup()
 
 void loop()
 {
-  // Read raw values
-  find_raw_inputs();
+  static unsigned long lastSampleTime = 0;  // Stores the last sample time in milliseconds
+  unsigned long currentMillis = millis();   // Current time in milliseconds
 
-  // Convert raw values to voltages
-  x_voltage = convert_to_voltage(raw_x);
-  y_voltage = convert_to_voltage(raw_y);
-  z_voltage = convert_to_voltage(raw_z);
+  // Sampling period in milliseconds for 44.1 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
+  const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
 
-  // Find the G Forces in each direction
-  find_G_Forces();
+  if (currentMillis - lastSampleTime >= samplingPeriod) {
+    lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
+    
+    // Read raw values
+    find_raw_inputs();
 
-  // Scale factor for two decimal places
-  const int scaleFactor = 100;
+    // Convert raw values to voltages
+    x_voltage = convert_to_voltage(raw_x);
+    y_voltage = convert_to_voltage(raw_y);
+    z_voltage = convert_to_voltage(raw_z);
 
-  // Convert to fixed-point representation
-  int16_t x_fixed = (int16_t)(x * scaleFactor);
-  int16_t y_fixed = (int16_t)(y * scaleFactor);
-  int16_t z_fixed = (int16_t)(z * scaleFactor);
+    // Find the G Forces in each direction
+    find_G_Forces();
 
-  // Construct packet 
-  SensorDataPacket packet;
-  packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
-  packet.datatype = 0b11;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
-  packet.sensorId = 0b011;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
-  packet.timestamp = now();                                                          // Time when Data Captured
-  packet.data = packData(x_fixed, y_fixed, z_fixed);                                 // Data Field
-  packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
-  packet.eop = 0x45; 
+    // Scale factor for two decimal places
+    const int scaleFactor = 100;
 
-  // Print raw values for debugging
-  print_raw_values();
+    // Convert to fixed-point representation
+    int16_t x_fixed = (int16_t)(x * scaleFactor);
+    int16_t y_fixed = (int16_t)(y * scaleFactor);
+    int16_t z_fixed = (int16_t)(z * scaleFactor);
 
-  // Print G Forces
-  // print_G_Forces();
+    // Construct packet 
+    SensorDataPacket packet;
+    packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
+    packet.datatype = 0b11;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+    packet.sensorId = 0b011;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+    packet.timestamp = currentMillis;                                                          // Time when Data Captured
+    packet.data = packData(x_fixed, y_fixed, z_fixed);                                 // Data Field
+    packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
+    packet.eop = 0x45; 
 
-  // Print for Serial Plotter
-  print_for_plotter();
+    // Print raw values for debugging
+    print_raw_values();
 
-  printSensorDataPacket(packet);
+    // Print G Forces
+    // print_G_Forces();
 
-  sendSensorDataPacket(packet);
+    // Print for Serial Plotter
+    print_for_plotter();
 
-	delay(500);
+    printSensorDataPacket(packet);
+
+    sendSensorDataPacket(packet);
+  }
+
 }
 
 void find_raw_inputs()

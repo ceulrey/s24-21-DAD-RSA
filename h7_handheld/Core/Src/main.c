@@ -343,6 +343,9 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
 void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
     char buffer2[50];
+    char x_buf[50];
+    char y_buf[50];
+    char z_buf[50];
     double data;
     // Assuming the data field is treated as fixed-point and needs to be converted back to float
     if(packet->datatype != VIBRATION || packet->datatype != SOUND){
@@ -369,12 +372,17 @@ void printData(const SensorDataPacket *packet) {
 //    sprintf(buffer, "Data: %lu\r\n", packet->data);
 //    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 
+    // Data - Signed Integer
     if(packet->datatype == TEMPERATURE) {
         // For non-vibration data, print as before
     	sprintf(buffer, "Temp: %.2f C\r\n", data);
+    	sprintf(buffer2, "%.2f C", data);
+    	NextionSetText(&nextion, &temp_C, buffer2);
     }
     else if(packet->datatype == HUMIDITY){
     	sprintf(buffer, "Hum: %.2f %%\r\n", data);
+    	sprintf(buffer2, "%.2f %%", data);
+    	NextionSetText(&nextion, &hum_RH, buffer2);
     }
     else if(packet->datatype == SOUND){
     	sprintf(buffer, "Sound: %lu dB\r\n", packet->data);
@@ -390,6 +398,12 @@ void printData(const SensorDataPacket *packet) {
         float z_float = z / 100.0f;
 //        sprintf(buffer2, "Data: %lu\r\n", packet->data);
         sprintf(buffer, "X: %.2f G\tY: %.2f G\tZ: %.2f G\r\n", x_float, y_float, z_float);
+    	sprintf(x_buf, "X: %.2f G", x_float);
+    	sprintf(y_buf, "Y: %.2f G", y_float);
+    	sprintf(z_buf, "Z: %.2f G", z_float);
+    	NextionSetText(&nextion, &vib_X, x_buf);
+    	NextionSetText(&nextion, &vib_Y, y_buf);
+    	NextionSetText(&nextion, &vib_Z, z_buf);
     }
     else{
     	sprintf(buffer, "Bad Data Type", data);
