@@ -32,6 +32,7 @@
 #define z_pin A5
 
 #define BAUD 921600       // using 115200 baud rate
+// #define BAUD 115200       // using 115200 baud rate
 #define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
 #include "Arduino.h"
 
@@ -98,6 +99,7 @@ void loop()
 
   // Sampling period in milliseconds for 44.1 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
   const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
+  // const unsigned long samplingPeriod = 1000;  // 1 Hz, 1 sample a second
 
   if (currentMillis - lastSampleTime >= samplingPeriod) {
     lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
@@ -126,7 +128,7 @@ void loop()
     packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
     packet.datatype = 0b11;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
     packet.sensorId = 0b011;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
-    packet.timestamp = currentMillis;                                                          // Time when Data Captured
+    packet.timestamp = currentMillis;                                                  // Time when Data Captured
     packet.data = packData(x_fixed, y_fixed, z_fixed);                                 // Data Field
     packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
     packet.eop = 0x45; 

@@ -31,23 +31,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY
  13 .comment      00000043  00000000  00000000  00020224  2**0
                   CONTENTS, READONLY
- 14 .debug_info   0001afa0  00000000  00000000  00020267  2**0
+ 14 .debug_info   0001afb0  00000000  00000000  00020267  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_abbrev 00004314  00000000  00000000  0003b207  2**0
+ 15 .debug_abbrev 00004314  00000000  00000000  0003b217  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_aranges 00001560  00000000  00000000  0003f520  2**3
+ 16 .debug_aranges 00001560  00000000  00000000  0003f530  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_rnglists 0000106e  00000000  00000000  00040a80  2**0
+ 17 .debug_rnglists 0000106e  00000000  00000000  00040a90  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_macro  00025694  00000000  00000000  00041aee  2**0
+ 18 .debug_macro  00025694  00000000  00000000  00041afe  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_line   0001d7e1  00000000  00000000  00067182  2**0
+ 19 .debug_line   0001d7e3  00000000  00000000  00067192  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .debug_str    000d03b6  00000000  00000000  00084963  2**0
+ 20 .debug_str    000d03bd  00000000  00000000  00084975  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_frame  00006b68  00000000  00000000  00154d1c  2**2
+ 21 .debug_frame  00006b68  00000000  00000000  00154d34  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 22 .debug_line_str 0000007d  00000000  00000000  0015b884  2**0
+ 22 .debug_line_str 0000007d  00000000  00000000  0015b89c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -2307,10 +2307,10 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
 
 void printData(const SensorDataPacket *packet) {
  8001560:	e92d 43b0 	stmdb	sp!, {r4, r5, r7, r8, r9, lr}
- 8001564:	b0da      	sub	sp, #360	; 0x168
+ 8001564:	b0e8      	sub	sp, #416	; 0x1a0
  8001566:	af04      	add	r7, sp, #16
- 8001568:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 800156c:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001568:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 800156c:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  8001570:	6018      	str	r0, [r3, #0]
     char x_buf[50];
     char y_buf[50];
@@ -2318,21 +2318,21 @@ void printData(const SensorDataPacket *packet) {
     double data;
     // Assuming the data field is treated as fixed-point and needs to be converted back to float
     if(packet->datatype != VIBRATION || packet->datatype != SOUND){
- 8001572:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001576:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001572:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001576:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  800157a:	681b      	ldr	r3, [r3, #0]
  800157c:	785b      	ldrb	r3, [r3, #1]
  800157e:	2b03      	cmp	r3, #3
  8001580:	d107      	bne.n	8001592 <printData+0x32>
- 8001582:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001586:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001582:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001586:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  800158a:	681b      	ldr	r3, [r3, #0]
  800158c:	785b      	ldrb	r3, [r3, #1]
  800158e:	2b02      	cmp	r3, #2
  8001590:	d013      	beq.n	80015ba <printData+0x5a>
         data = packet->data / 100.0;  // Convert fixed-point back to double
- 8001592:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001596:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001592:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001596:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  800159a:	681b      	ldr	r3, [r3, #0]
  800159c:	e9d3 2302 	ldrd	r2, r3, [r3, #8]
  80015a0:	4610      	mov	r0, r2
@@ -2343,120 +2343,120 @@ void printData(const SensorDataPacket *packet) {
  80015ae:	f7ff f94d 	bl	800084c <__aeabi_ddiv>
  80015b2:	4602      	mov	r2, r0
  80015b4:	460b      	mov	r3, r1
- 80015b6:	e9c7 2354 	strd	r2, r3, [r7, #336]	; 0x150
+ 80015b6:	e9c7 2362 	strd	r2, r3, [r7, #392]	; 0x188
     }
 
     // Start of Packet (SOP) - Hexadecimal
     sprintf(buffer, "SOP: 0x%02X\r\n", packet->sop);
- 80015ba:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 80015be:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 80015ba:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 80015be:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  80015c2:	681b      	ldr	r3, [r3, #0]
  80015c4:	781b      	ldrb	r3, [r3, #0]
  80015c6:	461a      	mov	r2, r3
- 80015c8:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 80015c8:	f507 738c 	add.w	r3, r7, #280	; 0x118
  80015cc:	49b1      	ldr	r1, [pc, #708]	; (8001894 <printData+0x334>)
  80015ce:	4618      	mov	r0, r3
  80015d0:	f00b fdc8 	bl	800d164 <siprintf>
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
- 80015d4:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 80015d4:	f507 738c 	add.w	r3, r7, #280	; 0x118
  80015d8:	4618      	mov	r0, r3
  80015da:	f7fe fe49 	bl	8000270 <strlen>
  80015de:	4603      	mov	r3, r0
  80015e0:	b29a      	uxth	r2, r3
- 80015e2:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
+ 80015e2:	f507 718c 	add.w	r1, r7, #280	; 0x118
  80015e6:	2364      	movs	r3, #100	; 0x64
  80015e8:	48ab      	ldr	r0, [pc, #684]	; (8001898 <printData+0x338>)
  80015ea:	f006 fa95 	bl	8007b18 <HAL_UART_Transmit>
 
     // Data Type - Binary
     sprintf(buffer, "Data Type: %u\r\n", packet->datatype);
- 80015ee:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 80015f2:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 80015ee:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 80015f2:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  80015f6:	681b      	ldr	r3, [r3, #0]
  80015f8:	785b      	ldrb	r3, [r3, #1]
  80015fa:	461a      	mov	r2, r3
- 80015fc:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 80015fc:	f507 738c 	add.w	r3, r7, #280	; 0x118
  8001600:	49a6      	ldr	r1, [pc, #664]	; (800189c <printData+0x33c>)
  8001602:	4618      	mov	r0, r3
  8001604:	f00b fdae 	bl	800d164 <siprintf>
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
- 8001608:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 8001608:	f507 738c 	add.w	r3, r7, #280	; 0x118
  800160c:	4618      	mov	r0, r3
  800160e:	f7fe fe2f 	bl	8000270 <strlen>
  8001612:	4603      	mov	r3, r0
  8001614:	b29a      	uxth	r2, r3
- 8001616:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
+ 8001616:	f507 718c 	add.w	r1, r7, #280	; 0x118
  800161a:	2364      	movs	r3, #100	; 0x64
  800161c:	489e      	ldr	r0, [pc, #632]	; (8001898 <printData+0x338>)
  800161e:	f006 fa7b 	bl	8007b18 <HAL_UART_Transmit>
 
     // Sensor ID - Binary
     sprintf(buffer, "Sensor ID: %u\r\n", packet->sensorId);
- 8001622:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001626:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001622:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001626:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  800162a:	681b      	ldr	r3, [r3, #0]
  800162c:	789b      	ldrb	r3, [r3, #2]
  800162e:	461a      	mov	r2, r3
- 8001630:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 8001630:	f507 738c 	add.w	r3, r7, #280	; 0x118
  8001634:	499a      	ldr	r1, [pc, #616]	; (80018a0 <printData+0x340>)
  8001636:	4618      	mov	r0, r3
  8001638:	f00b fd94 	bl	800d164 <siprintf>
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
- 800163c:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 800163c:	f507 738c 	add.w	r3, r7, #280	; 0x118
  8001640:	4618      	mov	r0, r3
  8001642:	f7fe fe15 	bl	8000270 <strlen>
  8001646:	4603      	mov	r3, r0
  8001648:	b29a      	uxth	r2, r3
- 800164a:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
+ 800164a:	f507 718c 	add.w	r1, r7, #280	; 0x118
  800164e:	2364      	movs	r3, #100	; 0x64
  8001650:	4891      	ldr	r0, [pc, #580]	; (8001898 <printData+0x338>)
  8001652:	f006 fa61 	bl	8007b18 <HAL_UART_Transmit>
 
     // Timestamp - Decimal
     sprintf(buffer, "Timestamp: %lu\r\n", packet->timestamp);
- 8001656:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 800165a:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001656:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 800165a:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  800165e:	681b      	ldr	r3, [r3, #0]
  8001660:	685a      	ldr	r2, [r3, #4]
- 8001662:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 8001662:	f507 738c 	add.w	r3, r7, #280	; 0x118
  8001666:	498f      	ldr	r1, [pc, #572]	; (80018a4 <printData+0x344>)
  8001668:	4618      	mov	r0, r3
  800166a:	f00b fd7b 	bl	800d164 <siprintf>
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
- 800166e:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 800166e:	f507 738c 	add.w	r3, r7, #280	; 0x118
  8001672:	4618      	mov	r0, r3
  8001674:	f7fe fdfc 	bl	8000270 <strlen>
  8001678:	4603      	mov	r3, r0
  800167a:	b29a      	uxth	r2, r3
- 800167c:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
+ 800167c:	f507 718c 	add.w	r1, r7, #280	; 0x118
  8001680:	2364      	movs	r3, #100	; 0x64
  8001682:	4885      	ldr	r0, [pc, #532]	; (8001898 <printData+0x338>)
  8001684:	f006 fa48 	bl	8007b18 <HAL_UART_Transmit>
-
 //    // Data - Decimal
 //    sprintf(buffer, "Data: %lu\r\n", packet->data);
 //    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 
+    // Data - Signed Integer
     if(packet->datatype == TEMPERATURE) {
- 8001688:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 800168c:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001688:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 800168c:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  8001690:	681b      	ldr	r3, [r3, #0]
  8001692:	785b      	ldrb	r3, [r3, #1]
  8001694:	2b00      	cmp	r3, #0
  8001696:	d115      	bne.n	80016c4 <printData+0x164>
         // For non-vibration data, print as before
     	sprintf(buffer, "Temp: %.2f C\r\n", data);
- 8001698:	f107 00e0 	add.w	r0, r7, #224	; 0xe0
- 800169c:	e9d7 2354 	ldrd	r2, r3, [r7, #336]	; 0x150
+ 8001698:	f507 708c 	add.w	r0, r7, #280	; 0x118
+ 800169c:	e9d7 2362 	ldrd	r2, r3, [r7, #392]	; 0x188
  80016a0:	4981      	ldr	r1, [pc, #516]	; (80018a8 <printData+0x348>)
  80016a2:	f00b fd5f 	bl	800d164 <siprintf>
     	sprintf(buffer2, "%.2f C", data);
- 80016a6:	f107 00ac 	add.w	r0, r7, #172	; 0xac
- 80016aa:	e9d7 2354 	ldrd	r2, r3, [r7, #336]	; 0x150
+ 80016a6:	f107 00e4 	add.w	r0, r7, #228	; 0xe4
+ 80016aa:	e9d7 2362 	ldrd	r2, r3, [r7, #392]	; 0x188
  80016ae:	497f      	ldr	r1, [pc, #508]	; (80018ac <printData+0x34c>)
  80016b0:	f00b fd58 	bl	800d164 <siprintf>
     	NextionSetText(&nextion, &temp_C, buffer2);
- 80016b4:	f107 03ac 	add.w	r3, r7, #172	; 0xac
+ 80016b4:	f107 03e4 	add.w	r3, r7, #228	; 0xe4
  80016b8:	461a      	mov	r2, r3
  80016ba:	497d      	ldr	r1, [pc, #500]	; (80018b0 <printData+0x350>)
  80016bc:	487d      	ldr	r0, [pc, #500]	; (80018b4 <printData+0x354>)
@@ -2464,24 +2464,24 @@ void printData(const SensorDataPacket *packet) {
  80016c2:	e11c      	b.n	80018fe <printData+0x39e>
     }
     else if(packet->datatype == HUMIDITY){
- 80016c4:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 80016c8:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 80016c4:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 80016c8:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  80016cc:	681b      	ldr	r3, [r3, #0]
  80016ce:	785b      	ldrb	r3, [r3, #1]
  80016d0:	2b01      	cmp	r3, #1
  80016d2:	d115      	bne.n	8001700 <printData+0x1a0>
     	sprintf(buffer, "Hum: %.2f %%\r\n", data);
- 80016d4:	f107 00e0 	add.w	r0, r7, #224	; 0xe0
- 80016d8:	e9d7 2354 	ldrd	r2, r3, [r7, #336]	; 0x150
+ 80016d4:	f507 708c 	add.w	r0, r7, #280	; 0x118
+ 80016d8:	e9d7 2362 	ldrd	r2, r3, [r7, #392]	; 0x188
  80016dc:	4976      	ldr	r1, [pc, #472]	; (80018b8 <printData+0x358>)
  80016de:	f00b fd41 	bl	800d164 <siprintf>
-    	sprintf(buffer2, "%.2f %%", data);
- 80016e2:	f107 00ac 	add.w	r0, r7, #172	; 0xac
- 80016e6:	e9d7 2354 	ldrd	r2, r3, [r7, #336]	; 0x150
+    	sprintf(humBuf, "%.2f %%", data);
+ 80016e2:	f107 00b0 	add.w	r0, r7, #176	; 0xb0
+ 80016e6:	e9d7 2362 	ldrd	r2, r3, [r7, #392]	; 0x188
  80016ea:	4974      	ldr	r1, [pc, #464]	; (80018bc <printData+0x35c>)
  80016ec:	f00b fd3a 	bl	800d164 <siprintf>
-    	NextionSetText(&nextion, &hum_RH, buffer2);
- 80016f0:	f107 03ac 	add.w	r3, r7, #172	; 0xac
+    	NextionSetText(&nextion, &hum_RH, humBuf);
+ 80016f0:	f107 03b0 	add.w	r3, r7, #176	; 0xb0
  80016f4:	461a      	mov	r2, r3
  80016f6:	4972      	ldr	r1, [pc, #456]	; (80018c0 <printData+0x360>)
  80016f8:	486e      	ldr	r0, [pc, #440]	; (80018b4 <printData+0x354>)
@@ -2489,30 +2489,30 @@ void printData(const SensorDataPacket *packet) {
  80016fe:	e0fe      	b.n	80018fe <printData+0x39e>
     }
     else if(packet->datatype == SOUND){
- 8001700:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001704:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001700:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001704:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  8001708:	681b      	ldr	r3, [r3, #0]
  800170a:	785b      	ldrb	r3, [r3, #1]
  800170c:	2b02      	cmp	r3, #2
  800170e:	d11f      	bne.n	8001750 <printData+0x1f0>
     	sprintf(buffer, "Sound: %lu dB\r\n", packet->data);
- 8001710:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001714:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001710:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001714:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  8001718:	681b      	ldr	r3, [r3, #0]
  800171a:	e9d3 2302 	ldrd	r2, r3, [r3, #8]
- 800171e:	f107 00e0 	add.w	r0, r7, #224	; 0xe0
+ 800171e:	f507 708c 	add.w	r0, r7, #280	; 0x118
  8001722:	4968      	ldr	r1, [pc, #416]	; (80018c4 <printData+0x364>)
  8001724:	f00b fd1e 	bl	800d164 <siprintf>
     	sprintf(buffer2, "%lu dB", packet->data);
- 8001728:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 800172c:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001728:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 800172c:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  8001730:	681b      	ldr	r3, [r3, #0]
  8001732:	e9d3 2302 	ldrd	r2, r3, [r3, #8]
- 8001736:	f107 00ac 	add.w	r0, r7, #172	; 0xac
+ 8001736:	f107 00e4 	add.w	r0, r7, #228	; 0xe4
  800173a:	4963      	ldr	r1, [pc, #396]	; (80018c8 <printData+0x368>)
  800173c:	f00b fd12 	bl	800d164 <siprintf>
     	NextionSetText(&nextion, &sound_dB, buffer2);
- 8001740:	f107 03ac 	add.w	r3, r7, #172	; 0xac
+ 8001740:	f107 03e4 	add.w	r3, r7, #228	; 0xe4
  8001744:	461a      	mov	r2, r3
  8001746:	4961      	ldr	r1, [pc, #388]	; (80018cc <printData+0x36c>)
  8001748:	485a      	ldr	r0, [pc, #360]	; (80018b4 <printData+0x354>)
@@ -2520,69 +2520,69 @@ void printData(const SensorDataPacket *packet) {
  800174e:	e0d6      	b.n	80018fe <printData+0x39e>
     }
     else if (packet->datatype == VIBRATION) {
- 8001750:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001754:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001750:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001754:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  8001758:	681b      	ldr	r3, [r3, #0]
  800175a:	785b      	ldrb	r3, [r3, #1]
  800175c:	2b03      	cmp	r3, #3
  800175e:	f040 80c7 	bne.w	80018f0 <printData+0x390>
         int16_t x, y, z;
         unpackData(packet->data, &x, &y, &z);
- 8001762:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001766:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001762:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001766:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  800176a:	681b      	ldr	r3, [r3, #0]
  800176c:	e9d3 2302 	ldrd	r2, r3, [r3, #8]
  8001770:	4610      	mov	r0, r2
  8001772:	4619      	mov	r1, r3
- 8001774:	f107 040c 	add.w	r4, r7, #12
- 8001778:	f107 020e 	add.w	r2, r7, #14
- 800177c:	f107 030a 	add.w	r3, r7, #10
+ 8001774:	f107 0410 	add.w	r4, r7, #16
+ 8001778:	f107 0212 	add.w	r2, r7, #18
+ 800177c:	f107 030e 	add.w	r3, r7, #14
  8001780:	9300      	str	r3, [sp, #0]
  8001782:	4623      	mov	r3, r4
  8001784:	f000 f912 	bl	80019ac <unpackData>
         // Display the scaled values with two decimal places as floating points
         float x_float = x / 100.0f;
- 8001788:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 800178c:	f5a3 73a5 	sub.w	r3, r3, #330	; 0x14a
+ 8001788:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 800178c:	f5a3 73bf 	sub.w	r3, r3, #382	; 0x17e
  8001790:	f9b3 3000 	ldrsh.w	r3, [r3]
  8001794:	ee07 3a90 	vmov	s15, r3
  8001798:	eeb8 7ae7 	vcvt.f32.s32	s14, s15
  800179c:	eddf 6a4c 	vldr	s13, [pc, #304]	; 80018d0 <printData+0x370>
  80017a0:	eec7 7a26 	vdiv.f32	s15, s14, s13
- 80017a4:	edc7 7a53 	vstr	s15, [r7, #332]	; 0x14c
+ 80017a4:	edc7 7a61 	vstr	s15, [r7, #388]	; 0x184
         float y_float = y / 100.0f;
- 80017a8:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 80017ac:	f5a3 73a6 	sub.w	r3, r3, #332	; 0x14c
+ 80017a8:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 80017ac:	f5a3 73c0 	sub.w	r3, r3, #384	; 0x180
  80017b0:	f9b3 3000 	ldrsh.w	r3, [r3]
  80017b4:	ee07 3a90 	vmov	s15, r3
  80017b8:	eeb8 7ae7 	vcvt.f32.s32	s14, s15
  80017bc:	eddf 6a44 	vldr	s13, [pc, #272]	; 80018d0 <printData+0x370>
  80017c0:	eec7 7a26 	vdiv.f32	s15, s14, s13
- 80017c4:	edc7 7a52 	vstr	s15, [r7, #328]	; 0x148
+ 80017c4:	edc7 7a60 	vstr	s15, [r7, #384]	; 0x180
         float z_float = z / 100.0f;
- 80017c8:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 80017cc:	f5a3 73a7 	sub.w	r3, r3, #334	; 0x14e
+ 80017c8:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 80017cc:	f5a3 73c1 	sub.w	r3, r3, #386	; 0x182
  80017d0:	f9b3 3000 	ldrsh.w	r3, [r3]
  80017d4:	ee07 3a90 	vmov	s15, r3
  80017d8:	eeb8 7ae7 	vcvt.f32.s32	s14, s15
  80017dc:	eddf 6a3c 	vldr	s13, [pc, #240]	; 80018d0 <printData+0x370>
  80017e0:	eec7 7a26 	vdiv.f32	s15, s14, s13
- 80017e4:	edc7 7a51 	vstr	s15, [r7, #324]	; 0x144
+ 80017e4:	edc7 7a5f 	vstr	s15, [r7, #380]	; 0x17c
 //        sprintf(buffer2, "Data: %lu\r\n", packet->data);
         sprintf(buffer, "X: %.2f G\tY: %.2f G\tZ: %.2f G\r\n", x_float, y_float, z_float);
- 80017e8:	f8d7 014c 	ldr.w	r0, [r7, #332]	; 0x14c
+ 80017e8:	f8d7 0184 	ldr.w	r0, [r7, #388]	; 0x184
  80017ec:	f7fe feac 	bl	8000548 <__aeabi_f2d>
  80017f0:	4680      	mov	r8, r0
  80017f2:	4689      	mov	r9, r1
- 80017f4:	f8d7 0148 	ldr.w	r0, [r7, #328]	; 0x148
+ 80017f4:	f8d7 0180 	ldr.w	r0, [r7, #384]	; 0x180
  80017f8:	f7fe fea6 	bl	8000548 <__aeabi_f2d>
  80017fc:	4604      	mov	r4, r0
  80017fe:	460d      	mov	r5, r1
- 8001800:	f8d7 0144 	ldr.w	r0, [r7, #324]	; 0x144
+ 8001800:	f8d7 017c 	ldr.w	r0, [r7, #380]	; 0x17c
  8001804:	f7fe fea0 	bl	8000548 <__aeabi_f2d>
  8001808:	4602      	mov	r2, r0
  800180a:	460b      	mov	r3, r1
- 800180c:	f107 00e0 	add.w	r0, r7, #224	; 0xe0
+ 800180c:	f507 708c 	add.w	r0, r7, #280	; 0x118
  8001810:	e9cd 2302 	strd	r2, r3, [sp, #8]
  8001814:	e9cd 4500 	strd	r4, r5, [sp]
  8001818:	4642      	mov	r2, r8
@@ -2590,43 +2590,43 @@ void printData(const SensorDataPacket *packet) {
  800181c:	492d      	ldr	r1, [pc, #180]	; (80018d4 <printData+0x374>)
  800181e:	f00b fca1 	bl	800d164 <siprintf>
     	sprintf(x_buf, "X: %.2f G", x_float);
- 8001822:	f8d7 014c 	ldr.w	r0, [r7, #332]	; 0x14c
+ 8001822:	f8d7 0184 	ldr.w	r0, [r7, #388]	; 0x184
  8001826:	f7fe fe8f 	bl	8000548 <__aeabi_f2d>
  800182a:	4602      	mov	r2, r0
  800182c:	460b      	mov	r3, r1
- 800182e:	f107 0078 	add.w	r0, r7, #120	; 0x78
+ 800182e:	f107 007c 	add.w	r0, r7, #124	; 0x7c
  8001832:	4929      	ldr	r1, [pc, #164]	; (80018d8 <printData+0x378>)
  8001834:	f00b fc96 	bl	800d164 <siprintf>
     	sprintf(y_buf, "Y: %.2f G", y_float);
- 8001838:	f8d7 0148 	ldr.w	r0, [r7, #328]	; 0x148
+ 8001838:	f8d7 0180 	ldr.w	r0, [r7, #384]	; 0x180
  800183c:	f7fe fe84 	bl	8000548 <__aeabi_f2d>
  8001840:	4602      	mov	r2, r0
  8001842:	460b      	mov	r3, r1
- 8001844:	f107 0044 	add.w	r0, r7, #68	; 0x44
+ 8001844:	f107 0048 	add.w	r0, r7, #72	; 0x48
  8001848:	4924      	ldr	r1, [pc, #144]	; (80018dc <printData+0x37c>)
  800184a:	f00b fc8b 	bl	800d164 <siprintf>
     	sprintf(z_buf, "Z: %.2f G", z_float);
- 800184e:	f8d7 0144 	ldr.w	r0, [r7, #324]	; 0x144
+ 800184e:	f8d7 017c 	ldr.w	r0, [r7, #380]	; 0x17c
  8001852:	f7fe fe79 	bl	8000548 <__aeabi_f2d>
  8001856:	4602      	mov	r2, r0
  8001858:	460b      	mov	r3, r1
- 800185a:	f107 0010 	add.w	r0, r7, #16
+ 800185a:	f107 0014 	add.w	r0, r7, #20
  800185e:	4920      	ldr	r1, [pc, #128]	; (80018e0 <printData+0x380>)
  8001860:	f00b fc80 	bl	800d164 <siprintf>
     	NextionSetText(&nextion, &vib_X, x_buf);
- 8001864:	f107 0378 	add.w	r3, r7, #120	; 0x78
+ 8001864:	f107 037c 	add.w	r3, r7, #124	; 0x7c
  8001868:	461a      	mov	r2, r3
  800186a:	491e      	ldr	r1, [pc, #120]	; (80018e4 <printData+0x384>)
  800186c:	4811      	ldr	r0, [pc, #68]	; (80018b4 <printData+0x354>)
  800186e:	f7ff fc61 	bl	8001134 <NextionSetText>
     	NextionSetText(&nextion, &vib_Y, y_buf);
- 8001872:	f107 0344 	add.w	r3, r7, #68	; 0x44
+ 8001872:	f107 0348 	add.w	r3, r7, #72	; 0x48
  8001876:	461a      	mov	r2, r3
  8001878:	491b      	ldr	r1, [pc, #108]	; (80018e8 <printData+0x388>)
  800187a:	480e      	ldr	r0, [pc, #56]	; (80018b4 <printData+0x354>)
  800187c:	f7ff fc5a 	bl	8001134 <NextionSetText>
     	NextionSetText(&nextion, &vib_Z, z_buf);
- 8001880:	f107 0310 	add.w	r3, r7, #16
+ 8001880:	f107 0314 	add.w	r3, r7, #20
  8001884:	461a      	mov	r2, r3
  8001886:	4919      	ldr	r1, [pc, #100]	; (80018ec <printData+0x38c>)
  8001888:	480a      	ldr	r0, [pc, #40]	; (80018b4 <printData+0x354>)
@@ -2659,62 +2659,62 @@ void printData(const SensorDataPacket *packet) {
     }
     else{
     	sprintf(buffer, "Bad Data Type", data);
- 80018f0:	f107 00e0 	add.w	r0, r7, #224	; 0xe0
- 80018f4:	e9d7 2354 	ldrd	r2, r3, [r7, #336]	; 0x150
+ 80018f0:	f507 708c 	add.w	r0, r7, #280	; 0x118
+ 80018f4:	e9d7 2362 	ldrd	r2, r3, [r7, #392]	; 0x188
  80018f8:	4927      	ldr	r1, [pc, #156]	; (8001998 <printData+0x438>)
  80018fa:	f00b fc33 	bl	800d164 <siprintf>
     }
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
- 80018fe:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 80018fe:	f507 738c 	add.w	r3, r7, #280	; 0x118
  8001902:	4618      	mov	r0, r3
  8001904:	f7fe fcb4 	bl	8000270 <strlen>
  8001908:	4603      	mov	r3, r0
  800190a:	b29a      	uxth	r2, r3
- 800190c:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
+ 800190c:	f507 718c 	add.w	r1, r7, #280	; 0x118
  8001910:	2364      	movs	r3, #100	; 0x64
  8001912:	4822      	ldr	r0, [pc, #136]	; (800199c <printData+0x43c>)
  8001914:	f006 f900 	bl	8007b18 <HAL_UART_Transmit>
 
     // CRC - Hexadecimal
     sprintf(buffer, "CRC: 0x%02X\r\n", packet->crc);
- 8001918:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 800191c:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 8001918:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 800191c:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  8001920:	681b      	ldr	r3, [r3, #0]
  8001922:	7c1b      	ldrb	r3, [r3, #16]
  8001924:	461a      	mov	r2, r3
- 8001926:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 8001926:	f507 738c 	add.w	r3, r7, #280	; 0x118
  800192a:	491d      	ldr	r1, [pc, #116]	; (80019a0 <printData+0x440>)
  800192c:	4618      	mov	r0, r3
  800192e:	f00b fc19 	bl	800d164 <siprintf>
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
- 8001932:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 8001932:	f507 738c 	add.w	r3, r7, #280	; 0x118
  8001936:	4618      	mov	r0, r3
  8001938:	f7fe fc9a 	bl	8000270 <strlen>
  800193c:	4603      	mov	r3, r0
  800193e:	b29a      	uxth	r2, r3
- 8001940:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
+ 8001940:	f507 718c 	add.w	r1, r7, #280	; 0x118
  8001944:	2364      	movs	r3, #100	; 0x64
  8001946:	4815      	ldr	r0, [pc, #84]	; (800199c <printData+0x43c>)
  8001948:	f006 f8e6 	bl	8007b18 <HAL_UART_Transmit>
 
     // End of Packet (EOP) - Hexadecimal
     sprintf(buffer, "EOP: 0x%02X\r\n", packet->eop);
- 800194c:	f507 73ac 	add.w	r3, r7, #344	; 0x158
- 8001950:	f5a3 73aa 	sub.w	r3, r3, #340	; 0x154
+ 800194c:	f507 73c8 	add.w	r3, r7, #400	; 0x190
+ 8001950:	f5a3 73c6 	sub.w	r3, r3, #396	; 0x18c
  8001954:	681b      	ldr	r3, [r3, #0]
  8001956:	7c5b      	ldrb	r3, [r3, #17]
  8001958:	461a      	mov	r2, r3
- 800195a:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 800195a:	f507 738c 	add.w	r3, r7, #280	; 0x118
  800195e:	4911      	ldr	r1, [pc, #68]	; (80019a4 <printData+0x444>)
  8001960:	4618      	mov	r0, r3
  8001962:	f00b fbff 	bl	800d164 <siprintf>
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
- 8001966:	f107 03e0 	add.w	r3, r7, #224	; 0xe0
+ 8001966:	f507 738c 	add.w	r3, r7, #280	; 0x118
  800196a:	4618      	mov	r0, r3
  800196c:	f7fe fc80 	bl	8000270 <strlen>
  8001970:	4603      	mov	r3, r0
  8001972:	b29a      	uxth	r2, r3
- 8001974:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
+ 8001974:	f507 718c 	add.w	r1, r7, #280	; 0x118
  8001978:	2364      	movs	r3, #100	; 0x64
  800197a:	4808      	ldr	r0, [pc, #32]	; (800199c <printData+0x43c>)
  800197c:	f006 f8cc 	bl	8007b18 <HAL_UART_Transmit>
@@ -2728,7 +2728,7 @@ void printData(const SensorDataPacket *packet) {
  8001988:	f006 f8c6 	bl	8007b18 <HAL_UART_Transmit>
 }
  800198c:	bf00      	nop
- 800198e:	f507 77ac 	add.w	r7, r7, #344	; 0x158
+ 800198e:	f507 77c8 	add.w	r7, r7, #400	; 0x190
  8001992:	46bd      	mov	sp, r7
  8001994:	e8bd 83b0 	ldmia.w	sp!, {r4, r5, r7, r8, r9, pc}
  8001998:	0800f3ec 	.word	0x0800f3ec

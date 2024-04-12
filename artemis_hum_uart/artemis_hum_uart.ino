@@ -2,6 +2,7 @@
 #define RH_constant 2745 // Relative Humidity Constant * 10
 
 #define BAUD 921600       // using 115200 baud rate
+// #define BAUD 115200       // using 115200 baud rate
 #define CONFIG SERIAL_8N1 // a config value from HardwareSerial.h (defaults to SERIAL_8N1)
 #include "Arduino.h"
 
@@ -32,8 +33,9 @@ void loop()
   static unsigned long lastSampleTime = 0;  // Stores the last sample time in milliseconds
   unsigned long currentMillis = millis();   // Current time in milliseconds
 
-  // Sampling period in milliseconds for 44.1 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
+  // Sampling period in milliseconds for 54.2 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
   const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
+  // const unsigned long samplingPeriod = 1000;  // 1 Hz, 1 sample a second
 
   double T_decay = RCTime();
 
@@ -50,13 +52,13 @@ void loop()
     packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
     packet.datatype = 0b01;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
     packet.sensorId = 0b100;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
-    packet.timestamp = currentMillis;                                                          // Time when Data Captured
-    // packet.data = humidity;                                                            // Data Field
-    packet.data = fixedPointData;                                                               // Data Field
+    packet.timestamp = currentMillis;                                                  // Time when Data Captured
+    // packet.data = humidity;                                                         // Data Field
+    packet.data = fixedPointData;                                                      // Data Field
     packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
     packet.eop = 0x45;   
     
-    // Serial.println(humidity, 10);
+    Serial.println(humidity, 10);
 
     // Print packet before sending
     printSensorDataPacket(packet);

@@ -343,6 +343,7 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
 void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
     char buffer2[50];
+    char humBuf[50];
     char x_buf[50];
     char y_buf[50];
     char z_buf[50];
@@ -381,8 +382,8 @@ void printData(const SensorDataPacket *packet) {
     }
     else if(packet->datatype == HUMIDITY){
     	sprintf(buffer, "Hum: %.2f %%\r\n", data);
-    	sprintf(buffer2, "%.2f %%", data);
-    	NextionSetText(&nextion, &hum_RH, buffer2);
+    	sprintf(humBuf, "%.2f %%", data);
+    	NextionSetText(&nextion, &hum_RH, humBuf);
     }
     else if(packet->datatype == SOUND){
     	sprintf(buffer, "Sound: %lu dB\r\n", packet->data);
