@@ -66,7 +66,6 @@ typedef struct {
   uint8_t datatype;   // Data type
   uint8_t sensorId;   // Sensor ID
   uint32_t timestamp; // Timestamp
-//  uint64_t data; 	  // Sensor data
   int64_t data;        // Sensor data
   uint8_t crc;        // CRC for error checking
   uint8_t eop;
@@ -342,15 +341,18 @@ void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t
 
 void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
-    char buffer2[50];
-    char humBuf[50];
+    char temp_buf[100];
+    char hum_buf[100];
+    char sound_buf[100];
     char x_buf[50];
     char y_buf[50];
     char z_buf[50];
     double data;
+    int64_t signed_data;
     // Assuming the data field is treated as fixed-point and needs to be converted back to float
-    if(packet->datatype != VIBRATION || packet->datatype != SOUND){
-        data = packet->data / 100.0;  // Convert fixed-point back to double
+    if(packet->datatype == TEMPERATURE || packet->datatype == HUMIDITY){
+    	signed_data = (int16_t) (packet->data);
+    	data = signed_data / 100.0;
     }
 
     // Start of Packet (SOP) - Hexadecimal
@@ -377,18 +379,18 @@ void printData(const SensorDataPacket *packet) {
     if(packet->datatype == TEMPERATURE) {
         // For non-vibration data, print as before
     	sprintf(buffer, "Temp: %.2f C\r\n", data);
-    	sprintf(buffer2, "%.2f C", data);
-    	NextionSetText(&nextion, &temp_C, buffer2);
+    	sprintf(temp_buf, "%.2f C", data);
+    	NextionSetText(&nextion, &temp_C, temp_buf);
     }
     else if(packet->datatype == HUMIDITY){
     	sprintf(buffer, "Hum: %.2f %%\r\n", data);
-    	sprintf(humBuf, "%.2f %%", data);
-    	NextionSetText(&nextion, &hum_RH, humBuf);
+    	sprintf(hum_buf, "%.2f %%", data);
+    	NextionSetText(&nextion, &hum_RH, hum_buf);
     }
     else if(packet->datatype == SOUND){
     	sprintf(buffer, "Sound: %lu dB\r\n", packet->data);
-    	sprintf(buffer2, "%lu dB", packet->data);
-    	NextionSetText(&nextion, &sound_dB, buffer2);
+    	sprintf(sound_buf, "%lu dB", packet->data);
+    	NextionSetText(&nextion, &sound_dB, sound_buf);
     }
     else if (packet->datatype == VIBRATION) {
         int16_t x, y, z;
@@ -407,7 +409,7 @@ void printData(const SensorDataPacket *packet) {
     	NextionSetText(&nextion, &vib_Z, z_buf);
     }
     else{
-    	sprintf(buffer, "Bad Data Type", data);
+    	sprintf(buffer, "Bad Data Type\r\n");
     }
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 
@@ -666,7 +668,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Init.BaudRate = 921600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

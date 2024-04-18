@@ -1,4 +1,4 @@
-#define sensor_pin A2
+#define sensor_pin A1
 #define RH_constant 2745 // Relative Humidity Constant * 10
 
 #define BAUD 921600       // using 115200 baud rate
@@ -20,7 +20,13 @@ struct SensorDataPacket {
                       // Total Size: 17 bytes
 };
 
+SensorDataPacket packet;
+
 double H;
+double temp_humidity;
+unsigned long currentMillis;
+static unsigned long lastSampleTime;
+const unsigned long samplingPeriod = 1000;
 
 void setup()
 {
@@ -30,16 +36,17 @@ void setup()
 
 void loop()
 {
-  static unsigned long lastSampleTime = 0;  // Stores the last sample time in milliseconds
-  unsigned long currentMillis = millis();   // Current time in milliseconds
+  lastSampleTime = 0;  // Stores the last sample time in milliseconds
+  currentMillis = millis();   // Current time in milliseconds
 
   // Sampling period in milliseconds for 54.2 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
-  const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
   // const unsigned long samplingPeriod = 1000;  // 1 Hz, 1 sample a second
 
   double T_decay = RCTime();
 
   double humidity = (T_decay - RH_constant) / 24;
+
+  temp_humidity = humidity;
 
   // Convert humidity to fixed-point representation
   int64_t fixedPointData = static_cast<int64_t>(humidity * 100);  // Assuming T is your temperature in Celsius
@@ -48,7 +55,6 @@ void loop()
     lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
 
     // Construct packet 
-    SensorDataPacket packet;
     packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
     packet.datatype = 0b01;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
     packet.sensorId = 0b100;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
@@ -78,6 +84,30 @@ double RCTime()
   pinMode(sensor_pin, OUTPUT);
   digitalWrite(sensor_pin, HIGH);
 
+  unsigned long start_charge = millis();
+  int64_t fixedPointData = static_cast<int64_t>(temp_humidity * 100);  // Assuming T is your temperature in Celsius
+  while(millis() - start_charge < 500){
+    if (currentMillis - lastSampleTime >= samplingPeriod) {
+      lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
+          // Construct packet 
+      packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
+      packet.datatype = 0b01;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+      packet.sensorId = 0b100;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+      packet.timestamp = currentMillis;                                                  // Time when Data Captured
+      // packet.data = humidity;                                                         // Data Field
+      packet.data = fixedPointData;                                                      // Data Field
+      packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
+      packet.eop = 0x45;   
+      
+      Serial.println(temp_humidity, 10);
+
+      // Print packet before sending
+      printSensorDataPacket(packet);
+
+      sendSensorDataPacket(packet);
+    }
+  }
+
   // Wait to charge capacitor
   // delay(500);
 
@@ -90,7 +120,19 @@ double RCTime()
 
   // Loop until the pin goes low
   while (digitalRead(sensor_pin)) {
-    // Do nothing
+    // Serial.println("here");
+    // // // Construct packet 
+    // // packet.sop = 0x53;                                                                 // Unique Start Byte ('S' in ASCII)
+    // // packet.datatype = 0b01;                                                            // Data Type: Temp = 00, Humidity = 01, Sound = 10, Vibration = 11
+    // // packet.sensorId = 0b100;                                                           // USART Port Connected To: 000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+    // // packet.timestamp = currentMillis;                                                  // Time when Data Captured
+    // // // packet.data = humidity;                                                         // Data Field
+    // // packet.data = temp_humidity;                                                      // Data Field
+    // // packet.crc = calculateCRC((uint8_t*)&packet, sizeof(packet) - sizeof(packet.crc)); // CRC for Error Checking
+    // // packet.eop = 0x45;   
+    // // // Print packet before sending
+    // // printSensorDataPacket(packet);
+    // // sendSensorDataPacket(packet);
   }
 
   // Stop time

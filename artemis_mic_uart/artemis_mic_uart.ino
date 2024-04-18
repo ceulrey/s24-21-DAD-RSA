@@ -43,6 +43,7 @@ void loop() {
     lastSampleTime += samplingPeriod;  // Update the last sample time to maintain consistent sampling intervals
 
     int S = analogRead(A15);  // Read the sound sample
+    S = S + 50;
     // int64_t fixedPointData = static_cast<int64_t>(S * 100);  // Convert to fixed-point format
 
     // Construct the packet

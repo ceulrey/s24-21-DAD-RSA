@@ -121,7 +121,7 @@ void loop()
   unsigned long currentMillis = millis();   // Current time in milliseconds
 
   // Sampling period in milliseconds for 44.1 kHz sampling rate (T = 1/54211 = 0.0000184 s per sample) 
-  const unsigned long samplingPeriod = 18;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
+  const unsigned long samplingPeriod = 1000;  // Approximately equals to (1 / 54211) * 1000 = 18.4 ms
 
      // Find raw inputs for both Wheatstone Bridge Terminals
   find_raw_inputs();
@@ -142,7 +142,7 @@ void loop()
   // Find the temperature in degrees Celsius
   T = find_temperature(Rx);
 
-  print_temperature(T);
+  // print_temperature(T);
 
   int64_t fixedPointData = static_cast<int64_t>(T * 100);  // Assuming T is your temperature in Celsius
 

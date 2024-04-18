@@ -568,6 +568,8 @@ ETH_TxPacketConfig TxConfig;
 ETH_HandleTypeDef heth;
 
 SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi3;
+SPI_HandleTypeDef hspi4;
 SPI_HandleTypeDef hspi5;
 DMA_HandleTypeDef hdma_spi1_tx;
 
@@ -681,6 +683,8 @@ static void MX_TIM16_Init(void);
 static void MX_UART4_Init(void);
 static void MX_UART5_Init(void);
 static void MX_UART7_Init(void);
+static void MX_SPI4_Init(void);
+static void MX_SPI3_Init(void);
 /* USER CODE BEGIN PFP */
 
 void resetState(void);
@@ -702,7 +706,7 @@ void InitFifo(void);
 uint8_t tx_data[8];
 uint8_t rx_data[8]={0,0,0,0,0,0,0,0};
 uint8_t rx_data_sender[8]={0,0,0,0,0,0,0,0};
-volatile bool spiReady = 1;
+//volatile bool spiReady = 1;
 
 /////// reset pin for TX is B7   GPIOB GPIO_PIN_7
 /////// reset pin for RX is E4   GPIOE, GPIO_PIN_4
@@ -767,6 +771,8 @@ int main(void)
   MX_UART4_Init();
   MX_UART5_Init();
   MX_UART7_Init();
+  MX_SPI4_Init();
+  MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_UART_Receive_IT(&huart1, rx_data1, 1);
@@ -966,6 +972,102 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief SPI3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI3_Init(void)
+{
+
+  /* USER CODE BEGIN SPI3_Init 0 */
+
+  /* USER CODE END SPI3_Init 0 */
+
+  /* USER CODE BEGIN SPI3_Init 1 */
+
+  /* USER CODE END SPI3_Init 1 */
+  /* SPI3 parameter configuration*/
+  hspi3.Instance = SPI3;
+  hspi3.Init.Mode = SPI_MODE_MASTER;
+  hspi3.Init.Direction = SPI_DIRECTION_1LINE;
+  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi3.Init.NSS = SPI_NSS_SOFT;
+  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+  hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi3.Init.CRCPolynomial = 0x0;
+  hspi3.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  hspi3.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
+  hspi3.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
+  hspi3.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi3.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi3.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
+  hspi3.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+  hspi3.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
+  hspi3.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+  hspi3.Init.IOSwap = SPI_IO_SWAP_DISABLE;
+  if (HAL_SPI_Init(&hspi3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI3_Init 2 */
+
+  /* USER CODE END SPI3_Init 2 */
+
+}
+
+/**
+  * @brief SPI4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI4_Init(void)
+{
+
+  /* USER CODE BEGIN SPI4_Init 0 */
+
+  /* USER CODE END SPI4_Init 0 */
+
+  /* USER CODE BEGIN SPI4_Init 1 */
+
+  /* USER CODE END SPI4_Init 1 */
+  /* SPI4 parameter configuration*/
+  hspi4.Instance = SPI4;
+  hspi4.Init.Mode = SPI_MODE_MASTER;
+  hspi4.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi4.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi4.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi4.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi4.Init.NSS = SPI_NSS_SOFT;
+  hspi4.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+  hspi4.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi4.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi4.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi4.Init.CRCPolynomial = 0x0;
+  hspi4.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  hspi4.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
+  hspi4.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
+  hspi4.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi4.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi4.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
+  hspi4.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+  hspi4.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
+  hspi4.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+  hspi4.Init.IOSwap = SPI_IO_SWAP_DISABLE;
+  if (HAL_SPI_Init(&hspi4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI4_Init 2 */
+
+  /* USER CODE END SPI4_Init 2 */
 
 }
 
@@ -1692,7 +1794,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		}
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-		HAL_SPI_Transmit_DMA(&hspi1, (uint8_t*)&data1, sizeof(data1));
+		HAL_SPI_Transmit_DMA(&hspi4, (uint8_t*)&data1, sizeof(data1));
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
 
@@ -1702,7 +1804,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		}
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-		HAL_SPI_Transmit_DMA(&hspi1, (uint8_t*)&data1, sizeof(data1));
+		HAL_SPI_Transmit_DMA(&hspi4, (uint8_t*)&data1, sizeof(data1));
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 		*/
 		//SensorDataPacket data3[220];
@@ -1711,7 +1813,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		}
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-		HAL_SPI_Transmit_DMA(&hspi1, (uint8_t*)&data1, sizeof(data1));
+		HAL_SPI_Transmit_DMA(&hspi4, (uint8_t*)&data1, sizeof(data1));
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
 
@@ -1722,7 +1824,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		}
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-		HAL_SPI_Transmit_DMA(&hspi1, (uint8_t*)&data1, sizeof(data1));
+		HAL_SPI_Transmit_DMA(&hspi4, (uint8_t*)&data1, sizeof(data1));
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 		if(timer_counter == 25){
 			HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1); //yellow
@@ -1752,7 +1854,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef * hspi)
 	}
 	else if (hspi->Instance == SPI5){
 		// Signal that SPI transmission is complete
-		spiReady = true; // Set the flag to indicate SPI is ready for the next transmission
+//		spiReady = true; // Set the flag to indicate SPI is ready for the next transmission
 		HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1); //yellow
 	}
 
@@ -1836,14 +1938,18 @@ void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, ui
             }
             break;
         case UART_DATATYPE: // Data type Case
-        	sensorData->datatype = rxByte; // Set th		e data type (Temp = 00, Humidity = 01, Sound = 10, Vibration = 11)
-            *uartState = UART_SENSOR_ID; // Next parameter
+        	if(rxByte == 0 || rxByte == 1 || rxByte == 2 || rxByte == 3){
+            	sensorData->datatype = rxByte; // Set the data type (Temp = 00, Humidity = 01, Sound = 10, Vibration = 11)
+                *uartState = UART_SENSOR_ID; // Next parameter
+        	}
             break;
 
         case UART_SENSOR_ID: // Sensor ID Case
-        	sensorData->sensorId = rxByte; // Set the sensor ID (000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
-        	*dataIndex = 0; // Reset dataIndex for the next field
-            *uartState = UART_TIMESTAMP; // Next parameter
+        	if(rxByte == 0 || rxByte == 1 || rxByte == 2 || rxByte == 3 || rxByte == 4 || rxByte == 5 || rxByte == 6 || rxByte == 7){
+				sensorData->sensorId = rxByte; // Set the sensor ID (000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+				*dataIndex = 0; // Reset dataIndex for the next field
+				*uartState = UART_TIMESTAMP; // Next parameter
+        	}
 //                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
             break;
 
@@ -1922,10 +2028,10 @@ void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, ui
 //        	    uint8_t* bytePtr = ((uint8_t*)sensorData) + i; // Point to each byte in sequence
 //        	    HAL_SPI_Transmit(&hspi5, bytePtr, 1, 100); // Transmit one byte at a time
 //        	}
-        	if(spiReady) {
-        		spiReady = false; // Clear the flag to indicate SPI is busy
-        	    HAL_SPI_Transmit_IT(&hspi5, (uint8_t*)sensorData, sizeof(SensorDataPacket)); // Transmit the data over SPI
-        	}
+//        	if(spiReady) {
+//        		spiReady = false; // Clear the flag to indicate SPI is busy
+        	    HAL_SPI_Transmit_IT(&hspi4, (uint8_t*)sensorData, sizeof(SensorDataPacket)); // Transmit the data over SPI
+//        	}
 //        	HAL_SPI_Transmit(&hspi5, (uint8_t*)sensorData, sizeof(SensorDataPacket), 100);
 
 //        	HAL_SPI_Transmit(&hspi5, (uint8_t*)sensorData, sizeof(*sensorData), 100);
@@ -1970,13 +2076,13 @@ void CC1200_Reset(void)
 	tx_data[0]=0x30;
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 	HAL_Delay(10);
-	HAL_SPI_Transmit_IT(&hspi1, tx_data, 1);
+	HAL_SPI_Transmit_IT(&hspi4, tx_data, 1);
 	HAL_Delay(10);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 	HAL_Delay(10);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 0);
 	HAL_Delay(10);
-	HAL_SPI_Transmit_IT(&hspi5, tx_data, 1);
+	HAL_SPI_Transmit_IT(&hspi4, tx_data, 1);
 	HAL_Delay(10);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 1);
 	HAL_Delay(10);
@@ -1995,9 +2101,9 @@ void CC1200_Init(registerSetting_t *init_seq)
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 		HAL_Delay(10);
 		//if(init_seq[i*3])
-			HAL_SPI_Transmit_IT(&hspi1, spi_buf, 3);
+			HAL_SPI_Transmit_IT(&hspi4, spi_buf, 3);
 		//else
-		//	HAL_SPI_Transmit_IT(&hspi1, spi_buf, 2);
+		//	HAL_SPI_Transmit_IT(&hspi4, spi_buf, 2);
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 		HAL_Delay(10);
 	}
@@ -2009,9 +2115,9 @@ void CC1200_Init(registerSetting_t *init_seq)
         spi_buf[2] = init_seq[i].registerValue;
 		  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 0);
 		  //if(init_seq[i*3])
- 			  HAL_SPI_Transmit_IT(&hspi5, spi_buf, 3);
+ 			  HAL_SPI_Transmit_IT(&hspi4, spi_buf, 3);
 		 // else
-		//	  HAL_SPI_Transmit_IT(&hspi5, spi_buf, 2);
+		//	  HAL_SPI_Transmit_IT(&hspi4, spi_buf, 2);
 		 HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 1);
 		 HAL_Delay(10);
 	}
@@ -2025,12 +2131,12 @@ void CC1200_Offset(int16_t offset)
 	tx_data[3]=*((uint8_t*)&offset);
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-	HAL_SPI_Transmit_IT(&hspi1, tx_data, 4);
+	HAL_SPI_Transmit_IT(&hspi4, tx_data, 4);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
 
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 0);
-	HAL_SPI_Transmit_IT(&hspi5, tx_data, 4);
+	HAL_SPI_Transmit_IT(&hspi4, tx_data, 4);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 1);
 }
 
@@ -2041,12 +2147,12 @@ void CC1200_BurstModeIncr(uint8_t enable)
 	tx_data[2]=enable;
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-	HAL_SPI_Transmit_IT(&hspi1, tx_data, 3);
+	HAL_SPI_Transmit_IT(&hspi4, tx_data, 3);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
 
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 0);
-	HAL_SPI_Transmit_IT(&hspi5, tx_data, 3);
+	HAL_SPI_Transmit_IT(&hspi4, tx_data, 3);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 1);
 }
 
@@ -2055,7 +2161,7 @@ void CC1200_RXMode(void)
 	tx_data[0]=0x34;
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 0);
 	HAL_Delay(10);
-	HAL_SPI_Transmit(&hspi5, tx_data, 1, 100);
+	HAL_SPI_Transmit(&hspi4, tx_data, 1, 100);
 	HAL_Delay(10);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 1);
 	HAL_Delay(10);
@@ -2066,7 +2172,7 @@ void CC1200_TXMode(void)
 	tx_data[0]=0x35;
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 	HAL_Delay(10);
-	HAL_SPI_Transmit(&hspi1, tx_data, 1, 100);
+	HAL_SPI_Transmit(&hspi4, tx_data, 1, 100);
 	HAL_Delay(10);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 	HAL_Delay(10);
@@ -2079,7 +2185,7 @@ void CC1200_RXStart(void)
 	tx_data[2]=0;
 
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 0);
-	HAL_SPI_TransmitReceive(&hspi5, tx_data, rx_data, 3, 10);
+	HAL_SPI_TransmitReceive(&hspi4, tx_data, rx_data, 3, 10);
 }
 void CC1200_TXStart(void)
 {
@@ -2088,7 +2194,7 @@ void CC1200_TXStart(void)
 	tx_data[2]=0;
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-	HAL_SPI_TransmitReceive(&hspi1, tx_data, rx_data, 3, 10);
+	HAL_SPI_TransmitReceive(&hspi4, tx_data, rx_data, 3, 10);
 }
 
 void CC1200_TXRXEnd(void)
@@ -2108,11 +2214,11 @@ void CC1200_SetFreq(uint32_t freq)
 	tx_data[4]=val&0xFF;
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-	HAL_SPI_Transmit(&hspi1, tx_data, 5, 10);
+	HAL_SPI_Transmit(&hspi4, tx_data, 5, 10);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 0);
-	HAL_SPI_Transmit(&hspi5, tx_data, 5, 10);
+	HAL_SPI_Transmit(&hspi4, tx_data, 5, 10);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 1);
 }
 
@@ -2123,11 +2229,11 @@ void CC1200_SetPwr(uint8_t pwr)
 	tx_data[1]=pwr;
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-	HAL_SPI_Transmit(&hspi1, tx_data, 2, 10);
+	HAL_SPI_Transmit(&hspi4, tx_data, 2, 10);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 0);
-	HAL_SPI_Transmit(&hspi5, tx_data, 2, 10);
+	HAL_SPI_Transmit(&hspi4, tx_data, 2, 10);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 1);
 }
 
