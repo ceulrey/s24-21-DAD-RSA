@@ -20,8 +20,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "string.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -43,8 +41,11 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
+UART_HandleTypeDef huart4;
+UART_HandleTypeDef huart5;
 
 /* USER CODE BEGIN PV */
 
@@ -52,12 +53,18 @@ UART_HandleTypeDef huart3;
  * PACKET STRUCTURE --> |SOP|DATATYPE|SENSOR ID|TIMESTAMP|DATA|CRC|EOP|
  * 						|1B|1B|1B|4B|8B|1B|1B| = 17 Bytes
  */
+#define TEMPERATURE 0b00
+#define HUMIDITY 0b01
+#define SOUND 0b10
+#define VIBRATION 0b11
+
 typedef struct {
-  uint8_t sop;       // Start of packet
+  uint8_t sop;        // Start of packet
   uint8_t datatype;   // Data type
   uint8_t sensorId;   // Sensor ID
   uint32_t timestamp; // Timestamp
-  uint64_t data;      // Sensor data
+//  uint64_t data; 	  // Sensor data
+  int64_t data;        // Sensor data
   uint8_t crc;        // CRC for error checking
   uint8_t eop;
 } SensorDataPacket;
@@ -73,13 +80,32 @@ typedef enum { // FSM States
     UART_DONE
 } UART_State_t;
 
-UART_State_t uartState = UART_WAIT_FOR_SOP; // Starting state
-SensorDataPacket sensorData; // Packet to be received and stored to memory
-uint8_t rx_data[1]; // Temp value for incoming byte
+// Declaration for USART1
+uint8_t rx_data1[1];
+SensorDataPacket sensorData1;
+UART_State_t uartState1 = UART_WAIT_FOR_SOP;
+uint32_t timestampBuffer1;
+uint64_t dataBuffer1;
+uint32_t dataIndex1 = 0; // Used for buffer indexing
+
+// Declaration for USART2
+uint8_t rx_data2[1];
+SensorDataPacket sensorData2;
+UART_State_t uartState2 = UART_WAIT_FOR_SOP;
+uint32_t timestampBuffer2;
+uint64_t dataBuffer2;
+uint32_t dataIndex2 = 0; // Used for buffer indexing
+
+// Declaration for USART4
+uint8_t rx_data3[1];
+SensorDataPacket sensorData3;
+UART_State_t uartState3 = UART_WAIT_FOR_SOP;
+uint32_t timestampBuffer3;
+uint64_t dataBuffer3;
+uint32_t dataIndex3 = 0; // Used for buffer indexing
+
 uint8_t crc_calculated = 0; // Placeholder for the calculated CRC
-uint32_t dataIndex = 0; // Used for buffer indexing
-uint32_t timestampBuffer;
-uint64_t dataBuffer;
+//uint32_t dataIndex = 0; // Used for buffer indexing
 
 /* USER CODE END PV */
 
@@ -88,114 +114,155 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_USART1_UART_Init(void);
+static void MX_UART4_Init(void);
+static void MX_UART5_Init(void);
 /* USER CODE BEGIN PFP */
 void resetState(void);
 int validateCRC(const SensorDataPacket *packet);
-void processData(const SensorDataPacket *packet);
+void printData(const SensorDataPacket *packet);
+void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, uint8_t *rxData,
+                     UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex);
+void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer);
+void unpackData(uint64_t packedData, int16_t* x, int16_t* y, int16_t* z);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	char buffer[100]; // Ensure the buffer is large enough for all the data
-    if(huart->Instance == USART2) { // If we are receiving on UART2
-        uint8_t rxByte = rx_data[0]; // Received byte
+    if(huart->Instance == USART1) {
+        // Process data from USART1
+    	processUartData(huart, &sensorData1, rx_data1, &uartState1, &timestampBuffer1, &dataBuffer1, &dataIndex1);
+    }
+    else if(huart->Instance == USART2) {
+        // Process data from USART2
+    	processUartData(huart, &sensorData2, rx_data2, &uartState2, &timestampBuffer2, &dataBuffer2, &dataIndex2);
+    }
+    else if(huart->Instance == UART4) {
+        // Process data from USART2
+    	processUartData(huart, &sensorData3, rx_data3, &uartState3, &timestampBuffer3, &dataBuffer3, &dataIndex3);
+    }
+
+    // Re-enable UART reception interrupt correctly for each port
+    if (huart->Instance == USART1) {
+        HAL_UART_Receive_IT(&huart1, rx_data1, 1);
+    }
+    else if (huart->Instance == USART2) {
+        HAL_UART_Receive_IT(&huart2, rx_data2, 1);
+    }
+    else if (huart->Instance == UART4) {
+    	HAL_UART_Receive_IT(&huart4, rx_data3, 1);
+    }
+}
+
+void processUartData(UART_HandleTypeDef *huart, SensorDataPacket *sensorData, uint8_t *rxData,
+                     UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer, uint32_t *dataIndex) {    // Your existing switch case logic here, adapted for the specific sensorData and rx_data
+    // This function needs to be adapted from your existing HAL_UART_RxCpltCallback logic
+	uint8_t rxByte = *rxData; // The received byte
 //    	sprintf(buffer, "RxByte: 0x%08lX\r\n", rxByte);
 //    	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100); // Print debug info
-        switch (uartState) {
-            case UART_WAIT_FOR_SOP: // SOP Case
-                if (rxByte == 0x53) { // SOP byte = 0x53 ('S')
-                	sensorData.sop = rxByte; // Set the sop
-                    uartState = UART_DATATYPE; // Next parameter
+    switch (*uartState) {
+        case UART_WAIT_FOR_SOP: // SOP Case
+            if (rxByte == 0x53) { // SOP byte = 0x53 ('S')
+            	sensorData->sop = rxByte; // Set the sop
+            	*uartState = UART_DATATYPE;
 //                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
-                }
-                break;
-            case UART_DATATYPE: // Data type Case
-            	sensorData.datatype = rxByte; // Set th		e data type (Temp = 00, Humidity = 01, Sound = 10, Vibration = 11)
-                uartState = UART_SENSOR_ID; // Next parameter
-                break;
+            }
+            break;
+        case UART_DATATYPE: // Data type Case
+        	sensorData->datatype = rxByte; // Set th		e data type (Temp = 00, Humidity = 01, Sound = 10, Vibration = 11)
+            *uartState = UART_SENSOR_ID; // Next parameter
+            break;
 
-            case UART_SENSOR_ID: // Sensor ID Case
-            	sensorData.sensorId = rxByte; // Set the sensor ID (000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
-            	dataIndex = 0; // Reset dataIndex for the next field
-                uartState = UART_TIMESTAMP; // Next parameter
+        case UART_SENSOR_ID: // Sensor ID Case
+        	sensorData->sensorId = rxByte; // Set the sensor ID (000, 001, 010, 011, 100, 101, 110, 111 (i.e. Sensor 1-8)
+        	*dataIndex = 0; // Reset dataIndex for the next field
+            *uartState = UART_TIMESTAMP; // Next parameter
 //                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
-                break;
+            break;
 
-            case UART_TIMESTAMP: // Timestamp Case
-                // Combine byte into timestamp assuming little endian - least significant byte first
+        case UART_TIMESTAMP: // Timestamp Case
+            // Combine byte into timestamp assuming little endian - least significant byte first
 //            	timestampBuffer |= ((uint32_t)rxByte << (24 - (dataIndex * 8)));
-            	timestampBuffer |= ((uint32_t)rxByte << ((dataIndex-1) * 8));
+        	*timestampBuffer |= ((uint32_t)rxByte << ((*dataIndex-1) * 8));
 //            	sprintf(buffer, "RxByte: 0x%08lX\r\n", rxByte);
 //            	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100); // Print debug info
 //            	sprintf(buffer, "Timestamp partial: 0x%08lX\r\n", timestampBuffer);
 //            	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100); // Print debug info
-                dataIndex++;
-                if (dataIndex >= sizeof(sensorData.timestamp)) {
-                    sensorData.timestamp = timestampBuffer; // Assign the complete timestamp
-                    dataIndex = 0; // Reset dataIndex for the data field
-                    timestampBuffer = 0; // Clear the buffer for the next use
-                    uartState = UART_DATA; // Move to the next state
-                }
-                break;
+            (*dataIndex)++;
+            if (*dataIndex >= sizeof(sensorData->timestamp)) {
+                sensorData->timestamp = *timestampBuffer; // Assign the complete timestamp
+                *dataIndex = 0; // Reset dataIndex for the data field
+                *timestampBuffer = 0; // Clear the buffer for the next use
+                *uartState = UART_DATA; // Move to the next state
+            }
+            break;
 
-            case UART_DATA: // Data Case
-                // Combine byte into data assuming little endian - least significant byte first
-            	dataBuffer |= ((uint32_t)rxByte << ((dataIndex-1) * 8));//            	sprintf(buffer, "Data partial: 0x%016llx\r\n", dataBuffer);
+        case UART_DATA: // Data Case
+            // Combine byte into data assuming little endian - least significant byte first
+        	*dataBuffer |= ((uint64_t)rxByte << ((*dataIndex-1) * 8));//            	sprintf(buffer, "Data partial: 0x%016llx\r\n", dataBuffer);
 //            	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100); // Print debug info
-                dataIndex++;
-                if (dataIndex >= sizeof(sensorData.data)) {
-                    sensorData.data = dataBuffer; // Assign the complete data
-                    dataIndex = 0; // Reset dataIndex for the CRC field
-                    dataBuffer = 0; // Clear the buffer for the next use
-                    uartState = UART_CRC; // Move to the next state
-                }
-                break;
+            (*dataIndex)++;
+            if (*dataIndex >= sizeof(sensorData->data)) {
+                sensorData->data = *dataBuffer; // Assign the complete data
+                *dataIndex = 0; // Reset dataIndex for the CRC field
+                *dataBuffer = 0; // Clear the buffer for the next use
+                *uartState = UART_CRC; // Move to the next state
+            }
+            break;
 
-            case UART_CRC: // CRC Case
-            	if(rxByte != 0){
-                    sensorData.crc = rxByte; // Set the CRC value based on algorithm
-                    uartState = UART_EOP; // Next parameter
-            	}
+        case UART_CRC: // CRC Case
+        	if(rxByte != 0){
+                sensorData->crc = rxByte; // Set the CRC value based on algorithm
+                *uartState = UART_EOP; // Next parameter
+        	}
 //                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
-                break;
+            break;
 
-            case UART_EOP:
-                if (rxByte == 0x45) { // EOP byte = 0x45 ('E')
-                    uartState = UART_DONE; // Packet reception is complete
-                    sensorData.eop = rxByte; // Set the eop
-                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
-                } else {
+        case UART_EOP:
+            if (rxByte == 0x45) { // EOP byte = 0x45 ('E')
+                *uartState = UART_DONE; // Packet reception is complete
+                sensorData->eop = rxByte; // Set the eop
+                if(huart->Instance == USART1){
+                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET); // Red LED set when packet is complete
+                }
+                else if(huart->Instance == USART2){
+                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+                }
+                else if(huart->Instance == UART4){
+                	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET); // Blue LED set when packet is complete
+                }
+//                HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
+            } else {
 //                    uartState = UART_DONE; // Packet reception is complete
 //                    sensorData.eop = rxByte; // Set the eop
 //                    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // Orange LED set when packet is complete
-                    uartState = UART_WAIT_FOR_SOP; // Invalid EOP, reset FSM
-                }
-                break;
+                uartState = UART_WAIT_FOR_SOP; // Invalid EOP, reset FSM
+            }
+            break;
 
-            case UART_DONE:
-                // Packet is complete, validate CRC and take appropriate action
+        case UART_DONE:
+            // Packet is complete, validate CRC and take appropriate action
 //                if (validateCRC(&sensorData)) {
 //                    processData(&sensorData); // Process the data
 //                }
-            	processData(&sensorData); // Process the data
-                resetState(); // Reset FSM and variables
-                break;
-        }
-        // Ready to receive the next byte
-        HAL_UART_Receive_IT(&huart2, rx_data, 1);
+        	printData(sensorData); // Process the data
+        	resetUartState(uartState, timestampBuffer, dataBuffer);
+            break;
     }
+    // Ready to receive the next byte
+    HAL_UART_Receive_IT(huart, rxData, 1);
 }
-void resetState(void) {
-    // Clear the buffers
-    timestampBuffer = 0;
-    dataBuffer = 0;
-    // Reset other state variables
-    uartState = UART_WAIT_FOR_SOP;
-    dataIndex = 0;
-    // Reset the hardware pin state if needed
+
+void resetUartState(UART_State_t *uartState, uint32_t *timestampBuffer, uint64_t *dataBuffer) {
+    *uartState = UART_WAIT_FOR_SOP; // Reset UART state
+    *timestampBuffer = 0; // Clear the timestamp buffer
+    *dataBuffer = 0; // Clear the data buffer
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
 int validateCRC(const SensorDataPacket *packet) {
@@ -203,8 +270,14 @@ int validateCRC(const SensorDataPacket *packet) {
     return packet->crc == crc_calculated;
 }
 
-void processData(const SensorDataPacket *packet) {
+void printData(const SensorDataPacket *packet) {
     char buffer[100]; // Ensure the buffer is large enough for all the data
+    char buffer2[100]; // Ensure the buffer is large enough for all the data
+    double data;
+    // Assuming the data field is treated as fixed-point and needs to be converted back to float
+    if(packet->datatype != VIBRATION){
+        data = packet->data / 100.0;  // Convert fixed-point back to double
+    }
 
     // Start of Packet (SOP) - Hexadecimal
     sprintf(buffer, "SOP: 0x%02X\r\n", packet->sop);
@@ -222,8 +295,31 @@ void processData(const SensorDataPacket *packet) {
     sprintf(buffer, "Timestamp: %lu\r\n", packet->timestamp);
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 
-    // Data - Decimal
-    sprintf(buffer, "Data: %lu\r\n", packet->data);
+//    // Data - Decimal
+//    sprintf(buffer, "Data: %lu\r\n", packet->data);
+//    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+
+    if(packet->datatype == TEMPERATURE) {
+        // For non-vibration data, print as before
+    	sprintf(buffer, "Temp: %.2f C\r\n", data);
+    }
+    else if(packet->datatype == HUMIDITY){
+    	sprintf(buffer, "Hum: %.2f %%\r\n", data);
+    }
+    else if(packet->datatype == SOUND){
+    	sprintf(buffer, "Sound: %.2f dB\r\n", data);
+    }
+    else if (packet->datatype == VIBRATION) {
+        int16_t x, y, z;
+        unpackData(packet->data, &x, &y, &z);
+        // Display the scaled values with two decimal places as floating points
+        float x_float = x / 100.0f;
+        float y_float = y / 100.0f;
+        float z_float = z / 100.0f;
+//        sprintf(buffer2, "Data: %lu\r\n", packet->data);
+        sprintf(buffer, "X: %.2f G\tY: %.2f G\tZ: %.2f G\r\n", x_float, y_float, z_float);
+    }
+//    HAL_UART_Transmit(&huart3, (uint8_t*)buffer2, strlen(buffer), 100);
     HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 
     // CRC - Hexadecimal
@@ -236,6 +332,12 @@ void processData(const SensorDataPacket *packet) {
 
     // Separator
     HAL_UART_Transmit(&huart3, (uint8_t*)"--------\r\n", 10, 100);
+}
+
+void unpackData(uint64_t packedData, int16_t* x, int16_t* y, int16_t* z) {
+    *x = (int16_t)((packedData >> 32) & 0xFFFF);
+    *y = (int16_t)((packedData >> 16) & 0xFFFF);
+    *z = (int16_t)(packedData & 0xFFFF);
 }
 
 //uint8_t CalculateCRC(uint8_t *data, size_t len) {
@@ -278,9 +380,13 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
+  MX_USART1_UART_Init();
+  MX_UART4_Init();
+  MX_UART5_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart2, rx_data, 1);
-
+  HAL_UART_Receive_IT(&huart1, rx_data1, 1);
+  HAL_UART_Receive_IT(&huart2, rx_data2, 1);
+  HAL_UART_Receive_IT(&huart4, rx_data3, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -333,6 +439,105 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief UART4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART4_Init(void)
+{
+
+  /* USER CODE BEGIN UART4_Init 0 */
+
+  /* USER CODE END UART4_Init 0 */
+
+  /* USER CODE BEGIN UART4_Init 1 */
+
+  /* USER CODE END UART4_Init 1 */
+  huart4.Instance = UART4;
+  huart4.Init.BaudRate = 115200;
+  huart4.Init.WordLength = UART_WORDLENGTH_8B;
+  huart4.Init.StopBits = UART_STOPBITS_1;
+  huart4.Init.Parity = UART_PARITY_NONE;
+  huart4.Init.Mode = UART_MODE_TX_RX;
+  huart4.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart4.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART4_Init 2 */
+
+  /* USER CODE END UART4_Init 2 */
+
+}
+
+/**
+  * @brief UART5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART5_Init(void)
+{
+
+  /* USER CODE BEGIN UART5_Init 0 */
+
+  /* USER CODE END UART5_Init 0 */
+
+  /* USER CODE BEGIN UART5_Init 1 */
+
+  /* USER CODE END UART5_Init 1 */
+  huart5.Instance = UART5;
+  huart5.Init.BaudRate = 115200;
+  huart5.Init.WordLength = UART_WORDLENGTH_8B;
+  huart5.Init.StopBits = UART_STOPBITS_1;
+  huart5.Init.Parity = UART_PARITY_NONE;
+  huart5.Init.Mode = UART_MODE_TX_RX;
+  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART5_Init 2 */
+
+  /* USER CODE END UART5_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
 }
 
 /**
@@ -416,12 +621,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PD13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  /*Configure GPIO pins : PD13 PD15 */
+  GPIO_InitStruct.Pin =  GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

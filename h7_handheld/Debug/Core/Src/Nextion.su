@@ -1,0 +1,11 @@
+../Core/Src/Nextion.c:10:9:NextionAddComp	24	static
+../Core/Src/Nextion.c:33:9:NextionInit	16	static
+../Core/Src/Nextion.c:52:9:NextionUpdate	24	static
+../Core/Src/Nextion.c:125:9:NextionGetText	96	static
+../Core/Src/Nextion.c:148:9:NextionSetText	88	static
+../Core/Src/Nextion.c:163:9:NextionGetVal	88	static
+../Core/Src/Nextion.c:185:9:NextionSetVal	88	static
+../Core/Src/Nextion.c:201:9:NextionSendCommand	24	static
+../Core/Src/Nextion.c:210:9:NextionEndCommand	24	static
+../Core/Src/Nextion.c:221:9:NextionRestartIT	16	static
+../Core/Src/Nextion.c:229:9:NextionStopIT	16	static
